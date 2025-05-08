@@ -8,6 +8,21 @@ The original use case was to trigger Jenkins jobs to build and verify pull reque
 
 [Here](http://bjurr.com/continuous-integration-with-bitbucket-server-and-jenkins/) is a blog post that includes the plugin.
 
+## How To Quickly Build From Source:
+
+1. Install Atlassian Developer Kit.
+   Last time Julius built it he used Java 17 and AMPS 9.1.1 (https://maven.artifacts.atlassian.com/com/atlassian/amps/atlassian-plugin-sdk/9.1.1/)
+
+2. Run:  **atlas-clean**
+
+3. Run:  **atlas-package -DskipTests**  (this fork's unit tests are broken)
+   If you were just trying to build from source you can stop here.
+
+4. Run:   **atlas-run -DskipTests**
+
+5. Finally:  navigate to (http://localhost:7990/bitbucket) and enjoy!
+
+
 ## Features
 The Pull Request Notifier for Bitbucket Server can:
 
