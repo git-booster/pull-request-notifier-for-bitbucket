@@ -42,42 +42,42 @@ public class GlobalAdminServletTest {
 
   @Test
   public void testGetRepository() {
-    assertThat(this.sut.getRepository(null).orNull()) //
+    assertThat(this.sut.getRepository(null).orElse(null)) //
         .isNull();
-    assertThat(this.sut.getRepository("").orNull()) //
+    assertThat(this.sut.getRepository("").orElse(null)) //
         .isNull();
-    assertThat(this.sut.getRepository("/").orNull()) //
+    assertThat(this.sut.getRepository("/").orElse(null)) //
         .isNull();
 
     Repository repository = mock(Repository.class);
     when(this.repositoryService.getBySlug("p", "r")) //
         .thenReturn(repository);
 
-    assertThat(this.sut.getRepository("prnfb/admin/p/r").orNull()) //
+    assertThat(this.sut.getRepository("prnfb/admin/p/r").orElse(null)) //
         .isSameAs(repository);
 
-    assertThat(this.sut.getRepository("some/path/prnfb/admin").orNull()) //
+    assertThat(this.sut.getRepository("some/path/prnfb/admin").orElse(null)) //
         .isNull();
   }
 
   @Test
   public void testGetProject() {
-    assertThat(this.sut.getProject(null).orNull()) //
+    assertThat(this.sut.getProject(null).orElse(null)) //
         .isNull();
-    assertThat(this.sut.getProject("").orNull()) //
+    assertThat(this.sut.getProject("").orElse(null)) //
         .isNull();
-    assertThat(this.sut.getProject("/").orNull()) //
+    assertThat(this.sut.getProject("/").orElse(null)) //
         .isNull();
 
     Project project = mock(Project.class);
     when(this.projectService.getByKey("p")) //
         .thenReturn(project);
 
-    assertThat(this.sut.getProject("/prnfb/admin/p").orNull()) //
+    assertThat(this.sut.getProject("/prnfb/admin/p").orElse(null)) //
         .isSameAs(project);
-    assertThat(this.sut.getProject("asd/asd/prnfb/admin/p").orNull()) //
+    assertThat(this.sut.getProject("asd/asd/prnfb/admin/p").orElse(null)) //
         .isSameAs(project);
-    assertThat(this.sut.getProject("some/path/prnfb/admin").orNull()) //
+    assertThat(this.sut.getProject("some/path/prnfb/admin").orElse(null)) //
         .isNull();
   }
 }

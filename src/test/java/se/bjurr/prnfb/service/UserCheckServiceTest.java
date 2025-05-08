@@ -18,7 +18,7 @@ import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.sal.api.user.UserKey;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import com.google.common.base.Optional;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,12 +92,12 @@ public class UserCheckServiceTest {
             new Restricted() {
               @Override
               public Optional<String> getRepositorySlug() {
-                return Optional.absent();
+                return Optional.empty();
               }
 
               @Override
               public Optional<String> getProjectKey() {
-                return Optional.absent();
+                return Optional.empty();
               }
             },
             SYSTEM_ADMIN);

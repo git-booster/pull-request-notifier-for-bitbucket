@@ -16,7 +16,6 @@ import com.atlassian.bitbucket.event.pull.PullRequestCommentAddedEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestCommentEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestMergedEvent;
-import com.google.common.base.Supplier;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,47 +40,30 @@ public class VariablesContextTest {
   public void testThatPullRequestMergeComitIsAddedToVariables() {
     final PullRequestMergedEvent pullRequestEvent = mock(PullRequestMergedEvent.class);
     final MinimalCommit commit = mock(MinimalCommit.class);
-    when(pullRequestEvent.getCommit()) //
-        .thenReturn(commit);
-    when(pullRequestEvent.getCommit().getId()) //
-        .thenReturn("hash");
+    when(pullRequestEvent.getCommit()).thenReturn(commit);
+    when(pullRequestEvent.getCommit().getId()).thenReturn("hash");
 
-    sut =
-        new VariablesContextBuilder() //
-            .setPullRequestEvent(pullRequestEvent) //
-            .build();
-    final Map<PrnfbVariable, Supplier<String>> actual = sut.getVariables();
+    sut = new VariablesContextBuilder().setPullRequestEvent(pullRequestEvent).build();
+    final Map<PrnfbVariable, String> actual = sut.getVariables();
 
-    assertThat(actual) //
-        .hasSize(1);
-    assertThat(actual.get(PULL_REQUEST_MERGE_COMMIT).get()) //
-        .isEqualTo("hash");
+    assertThat(actual).hasSize(1);
+    assertThat(actual.get(PULL_REQUEST_MERGE_COMMIT)).isEqualTo("hash");
   }
 
   @Test
   public void testThatPullRequestCommentIsAddedToVariables() {
     final PullRequestCommentAddedEvent pullRequestEvent = mock(PullRequestCommentAddedEvent.class);
     final Comment comment = mock(Comment.class);
-    when(pullRequestEvent.getComment()) //
-        .thenReturn(comment);
-    when(pullRequestEvent.getComment().getText()) //
-        .thenReturn("The comment");
-    when(pullRequestEvent.getCommentAction()) //
-        .thenReturn(ADDED);
+    when(pullRequestEvent.getComment()).thenReturn(comment);
+    when(pullRequestEvent.getComment().getText()).thenReturn("The comment");
+    when(pullRequestEvent.getCommentAction()).thenReturn(ADDED);
 
-    sut =
-        new VariablesContextBuilder() //
-            .setPullRequestEvent(pullRequestEvent) //
-            .build();
-    final Map<PrnfbVariable, Supplier<String>> actual = sut.getVariables();
+    sut = new VariablesContextBuilder().setPullRequestEvent(pullRequestEvent).build();
+    final Map<PrnfbVariable, String> actual = sut.getVariables();
 
-    assertThat(actual) //
-        .hasSize(3);
-    assertThat(actual.get(PULL_REQUEST_COMMENT_TEXT).get()) //
-        .isEqualTo("The comment");
-    assertThat(actual.get(PULL_REQUEST_COMMENT_ACTION).get()) //
-        .isEqualTo("ADDED");
-    assertThat(actual.get(PULL_REQUEST_COMMENT_ID).get()) //
-        .isEqualTo("0");
+    assertThat(actual).hasSize(3);
+    assertThat(actual.get(PULL_REQUEST_COMMENT_TEXT)).isEqualTo("The comment");
+    assertThat(actual.get(PULL_REQUEST_COMMENT_ACTION)).isEqualTo("ADDED");
+    assertThat(actual.get(PULL_REQUEST_COMMENT_ID)).isEqualTo("0");
   }
 }

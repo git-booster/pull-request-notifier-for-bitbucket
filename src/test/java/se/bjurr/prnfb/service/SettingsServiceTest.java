@@ -196,7 +196,7 @@ public class SettingsServiceTest {
     this.sut.addOrUpdateNotification(this.notification1);
 
     final List<PrnfbNotification> actual =
-        this.sut.getNotifications(this.notification1.getProjectKey().orNull());
+        this.sut.getNotifications(this.notification1.getProjectKey().orElse(null));
 
     assertThat(actual) //
         .containsOnly(this.notification1);
@@ -208,8 +208,8 @@ public class SettingsServiceTest {
 
     final List<PrnfbNotification> actual =
         this.sut.getNotifications(
-            this.notification1.getProjectKey().orNull(),
-            this.notification1.getRepositorySlug().orNull());
+            this.notification1.getProjectKey().orElse(null),
+            this.notification1.getRepositorySlug().orElse(null));
 
     assertThat(actual) //
         .hasSize(1);

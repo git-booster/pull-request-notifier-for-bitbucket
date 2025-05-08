@@ -10,7 +10,6 @@ import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
-import com.google.common.base.Supplier;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import java.io.File;
@@ -34,7 +33,7 @@ public class PrnfbVariableTest {
   private RepositoryService repositoryService;
   private SecurityService securityService;
   private boolean shouldAcceptAnyCertificate;
-  private Map<PrnfbVariable, Supplier<String>> variables;
+  private Map<PrnfbVariable, String> variables;
 
   private File findReadme(File file) {
     File candidate = new File(file.getAbsolutePath() + "/README.md");

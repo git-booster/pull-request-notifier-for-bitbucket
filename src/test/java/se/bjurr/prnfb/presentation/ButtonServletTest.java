@@ -233,11 +233,11 @@ public class ButtonServletTest {
 
   @Test
   public void testThatButtonCanBeListedPerProject() throws Exception {
-    when(this.settingsService.getButtons(this.buttonDto1.getProjectKey().orNull())) //
+    when(this.settingsService.getButtons(this.buttonDto1.getProjectKey().orElse(null))) //
         .thenReturn(newArrayList(this.button1));
     allowAll();
 
-    final Response actual = this.sut.get(this.buttonDto1.getProjectKey().orNull());
+    final Response actual = this.sut.get(this.buttonDto1.getProjectKey().orElse(null));
     @SuppressWarnings("unchecked")
     final Iterable<ButtonDTO> actualList = (Iterable<ButtonDTO>) actual.getEntity();
     final ButtonDTO first = actualList.iterator().next();
@@ -251,15 +251,15 @@ public class ButtonServletTest {
   @Test
   public void testThatButtonCanBeListedPerProjectAndRepo() throws Exception {
     when(this.settingsService.getButtons(
-            this.buttonDto1.getProjectKey().orNull(),
-            this.buttonDto1.getRepositorySlug().orNull())) //
+            this.buttonDto1.getProjectKey().orElse(null),
+            this.buttonDto1.getRepositorySlug().orElse(null))) //
         .thenReturn(newArrayList(this.button1));
     this.buttonDto1.setButtonFormListString(null);
     allowAll();
 
     final Response actual =
         this.sut.get(
-            this.buttonDto1.getProjectKey().orNull(), this.buttonDto1.getRepositorySlug().orNull());
+            this.buttonDto1.getProjectKey().orElse(null), this.buttonDto1.getRepositorySlug().orElse(null));
     @SuppressWarnings("unchecked")
     final Iterable<ButtonDTO> actualList = (Iterable<ButtonDTO>) actual.getEntity();
 

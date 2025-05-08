@@ -1,21 +1,21 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.emptyToNull;
+import static se.bjurr.prnfb.Util.checkNotNull;
+import static se.bjurr.prnfb.Util.emptyToNull;
+import static se.bjurr.prnfb.Util.firstNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import se.bjurr.prnfb.presentation.dto.ButtonFormType;
 
 public class PrnfbButtonFormElement {
-  private final String defaultValue;
-  private final String description;
-  private final String label;
-  private final String name;
-  private final List<PrnfbButtonFormElementOption> buttonFormElementOptionList;
-  private final boolean required;
-  private final ButtonFormType type;
+  private String defaultValue;
+  private String description;
+  private String label;
+  private String name;
+  private List<PrnfbButtonFormElementOption> buttonFormElementOptionList;
+  private boolean required;
+  private ButtonFormType type;
 
   public PrnfbButtonFormElement(
       String defaultValue,
@@ -29,11 +29,12 @@ public class PrnfbButtonFormElement {
     this.description = emptyToNull(description);
     this.label = checkNotNull(label, "label");
     this.name = checkNotNull(name, "name");
-    this.buttonFormElementOptionList =
-        firstNonNull(options, new ArrayList<PrnfbButtonFormElementOption>());
-    this.required = checkNotNull(required, required);
-    this.type = checkNotNull(type, type);
+    this.buttonFormElementOptionList = firstNotNull(options, new ArrayList<>());
+    this.required = required;
+    this.type = checkNotNull(type);
   }
+
+  public PrnfbButtonFormElement() {}
 
   @Override
   public boolean equals(Object obj) {
@@ -117,6 +118,34 @@ public class PrnfbButtonFormElement {
 
   public ButtonFormType getType() {
     return type;
+  }
+
+  public void setDefaultValue(String s) {
+    this.defaultValue = s;
+  }
+
+  public void setDescription(String s) {
+    this.description = s;
+  }
+
+  public void setLabel(String s) {
+    this.label = s;
+  }
+
+  public void setName(String s) {
+    this.name = s;
+  }
+
+  public void setOptions(List<PrnfbButtonFormElementOption> list) {
+    this.buttonFormElementOptionList = list;
+  }
+
+  public void setRequired(boolean b) {
+    this.required = b;
+  }
+
+  public void setType(ButtonFormType type) {
+    this.type = type;
   }
 
   @Override

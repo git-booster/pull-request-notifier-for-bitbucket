@@ -1,15 +1,17 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Lists.newArrayList;
+import static se.bjurr.prnfb.Util.checkNotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PrnfbSettings {
   public static final String UNCHANGED = "KEEP_THIS_TO_LEAVE_UNCHANGED";
-  private final List<PrnfbButton> buttons;
-  private List<PrnfbNotification> notifications = newArrayList();
-  private final PrnfbSettingsData prnfbSettingsData;
+  private List<PrnfbButton> buttons;
+  private List<PrnfbNotification> notifications = new ArrayList<>();
+  private PrnfbSettingsData prnfbSettingsData;
+
+  public PrnfbSettings() {}
 
   public PrnfbSettings(PrnfbSettingsBuilder builder) {
     this.notifications = checkNotNull(builder.getNotifications());
@@ -63,6 +65,18 @@ public class PrnfbSettings {
 
   public PrnfbSettingsData getPrnfbSettingsData() {
     return this.prnfbSettingsData;
+  }
+
+  public void setButtons(List<PrnfbButton> list) {
+    this.buttons = list;
+  }
+
+  public void setNotifications(List<PrnfbNotification> list) {
+    this.notifications = list;
+  }
+
+  public void setPrnfbSettingsData(PrnfbSettingsData data) {
+    this.prnfbSettingsData = data;
   }
 
   @Override

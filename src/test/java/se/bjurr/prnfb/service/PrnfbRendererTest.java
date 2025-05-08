@@ -6,7 +6,15 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static se.bjurr.prnfb.listener.PrnfbPullRequestAction.APPROVED;
 import static se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR.NONE;
-import static se.bjurr.prnfb.service.PrnfbVariable.*;
+import static se.bjurr.prnfb.service.PrnfbVariable.EVERYTHING_URL;
+import static se.bjurr.prnfb.service.PrnfbVariable.INJECTION_URL_VALUE;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_AUTHOR_EMAIL;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_COMMENT_TEXT;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_DESCRIPTION;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_FROM_HASH;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_MERGE_COMMIT;
+import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_TITLE;
+import static se.bjurr.prnfb.service.PrnfbVariable.VARIABLE_REGEX_MATCH;
 import static se.bjurr.prnfb.settings.PrnfbNotificationBuilder.prnfbNotificationBuilder;
 
 import com.atlassian.bitbucket.pull.PullRequest;
@@ -16,8 +24,6 @@ import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -50,16 +56,13 @@ public class PrnfbRendererTest {
   private final Boolean shouldAcceptAnyCertificate = true;
   private PrnfbRenderer sut;
   @Mock private ApplicationUser user;
-  private final Map<PrnfbVariable, Supplier<String>> variables = newHashMap();
+  private final Map<PrnfbVariable, String> variables = newHashMap();
 
   @Before
   public void before() throws ValidationException {
     initMocks(this);
     prnfbNotification =
-        prnfbNotificationBuilder() //
-            .withUrl("http://hej.com") //
-            .withTrigger(APPROVED) //
-            .build();
+        prnfbNotificationBuilder().withUrl("http://hej.com").withTrigger(APPROVED).build();
     sut =
         new PrnfbRenderer(
             pullRequest,
@@ -71,10 +74,8 @@ public class PrnfbRendererTest {
             variables,
             securityService);
 
-    when(pullRequest.getFromRef()) //
-        .thenReturn(fromRef);
-    when(pullRequest.getFromRef().getLatestCommit()) //
-        .thenReturn("latestCommitHash");
+    when(pullRequest.getFromRef()).thenReturn(fromRef);
+    when(pullRequest.getFromRef().getLatestCommit()).thenReturn("latestCommitHash");
 
     PrnfbVariable.setInvoker(
         new Invoker() {
@@ -113,15 +114,14 @@ public class PrnfbRendererTest {
 
     for (final PrnfbVariable v : PrnfbVariable.values()) {
       if (v != EVERYTHING_URL && v != PULL_REQUEST_DESCRIPTION) {
-        assertThat(actual) //
-            .containsOnlyOnce(v.name() + "=${" + v.name() + "}") //
-            .doesNotContain(EVERYTHING_URL.name()) //
+        assertThat(actual)
+            .containsOnlyOnce(v.name() + "=${" + v.name() + "}")
+            .doesNotContain(EVERYTHING_URL.name())
             .doesNotContain(PULL_REQUEST_DESCRIPTION.name());
       }
     }
 
-    assertThat(actual) //
-        .startsWith("asd ");
+    assertThat(actual).startsWith("asd ");
   }
 
   @Test
@@ -133,7 +133,7 @@ public class PrnfbRendererTest {
             sut.regexp(PULL_REQUEST_TITLE),
             "BNRSD-387 Fix circular reference logging on $host errors in RSD abstract client");
 
-    assertThat(actual) //
+    assertThat(actual)
         .isEqualTo(
             "asd BNRSD-387 Fix circular reference logging on $host errors in RSD abstract client asd");
   }
@@ -146,34 +146,29 @@ public class PrnfbRendererTest {
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my  string");
+    assertThat(actual).isEqualTo("my  string");
   }
 
   @Test
   public void testThatIfAVariableChrashesResolvedToNullOnResolveItWillBeEmpty() {
-    when(pullRequest.getAuthor()) //
-        .thenReturn(author);
-    when(pullRequest.getAuthor().getUser()) //
-        .thenReturn(user);
-    when(pullRequest.getAuthor().getUser().getEmailAddress()) //
-        .thenReturn(null);
+    when(pullRequest.getAuthor()).thenReturn(author);
+    when(pullRequest.getAuthor().getUser()).thenReturn(user);
+    when(pullRequest.getAuthor().getUser().getEmailAddress()).thenReturn(null);
     final String actual =
         sut.render(
             "my ${" + PULL_REQUEST_AUTHOR_EMAIL + "} string",
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my  string");
+    assertThat(actual).isEqualTo("my  string");
   }
 
   @Test
   public void testThatInjectionUrlCanBeRendered() throws ValidationException {
     prnfbNotification =
-        prnfbNotificationBuilder(prnfbNotification) //
-            .withInjectionUrl("http://getValueFrom.com/") //
-            .withTrigger(APPROVED) //
+        prnfbNotificationBuilder(prnfbNotification)
+            .withInjectionUrl("http://getValueFrom.com/")
+            .withTrigger(APPROVED)
             .build();
     sut =
         new PrnfbRenderer(
@@ -192,14 +187,12 @@ public class PrnfbRendererTest {
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my theResponse string");
+    assertThat(actual).isEqualTo("my theResponse string");
   }
 
   @Test
   public void testThatVariableRegexCanBeRendered() throws ValidationException {
-    when(pullRequest.getFromRef().getDisplayId()) //
-        .thenReturn("feature/hello-world");
+    when(pullRequest.getFromRef().getDisplayId()).thenReturn("feature/hello-world");
     prnfbNotification =
         prnfbNotificationBuilder(prnfbNotification)
             .withVariableName("PULL_REQUEST_FROM_BRANCH")
@@ -228,15 +221,14 @@ public class PrnfbRendererTest {
 
   @Test
   public void testThatMergeCommitCanBeRenderedIfExists() {
-    variables.put(PULL_REQUEST_MERGE_COMMIT, Suppliers.ofInstance("mergeHash"));
+    variables.put(PULL_REQUEST_MERGE_COMMIT, "mergeHash");
     final String actual =
         sut.render(
             "my ${" + PULL_REQUEST_MERGE_COMMIT + "} string",
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my mergeHash string");
+    assertThat(actual).isEqualTo("my mergeHash string");
   }
 
   @Test
@@ -247,8 +239,7 @@ public class PrnfbRendererTest {
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my  string");
+    assertThat(actual).isEqualTo("my  string");
   }
 
   @Test
@@ -259,33 +250,30 @@ public class PrnfbRendererTest {
             encodeFor,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my latestCommitHash string");
+    assertThat(actual).isEqualTo("my latestCommitHash string");
   }
 
   @Test
   public void testThatStringCanBeRenderedForUrl() {
-    variables.put(PULL_REQUEST_COMMENT_TEXT, Suppliers.ofInstance("the comment"));
+    variables.put(PULL_REQUEST_COMMENT_TEXT, "the comment");
     final String actual =
         sut.render(
             "my ${" + PULL_REQUEST_COMMENT_TEXT + "} string",
             ENCODE_FOR.URL,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my the+comment string");
+    assertThat(actual).isEqualTo("my the+comment string");
   }
 
   @Test
   public void testThatStringCanBeRenderedForHtml() {
-    variables.put(PULL_REQUEST_COMMENT_TEXT, Suppliers.ofInstance("the\ncomment \""));
+    variables.put(PULL_REQUEST_COMMENT_TEXT, "the\ncomment \"");
     final String actual =
         sut.render(
             "my ${" + PULL_REQUEST_COMMENT_TEXT + "} string",
             ENCODE_FOR.HTML,
             clientKeyStore,
             shouldAcceptAnyCertificate);
-    assertThat(actual) //
-        .isEqualTo("my the<br />comment &quot; string");
+    assertThat(actual).isEqualTo("my the<br />comment &quot; string");
   }
 }

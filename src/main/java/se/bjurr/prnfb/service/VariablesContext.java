@@ -1,6 +1,6 @@
 package se.bjurr.prnfb.service;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
+import static se.bjurr.prnfb.Util.isNullOrEmpty;
 import static se.bjurr.prnfb.service.PrnfbVariable.BUTTON_FORM_DATA;
 import static se.bjurr.prnfb.service.PrnfbVariable.BUTTON_TRIGGER_TITLE;
 import static se.bjurr.prnfb.service.PrnfbVariable.PULL_REQUEST_COMMENT_ACTION;
@@ -15,9 +15,6 @@ import com.atlassian.bitbucket.event.pull.PullRequestCommentEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestMergedEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestRescopedEvent;
-import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,71 +75,41 @@ public class VariablesContext {
     return groups;
   }
 
-  public Map<PrnfbVariable, Supplier<String>> getVariables() {
-    final Map<PrnfbVariable, Supplier<String>> variables = new HashMap<>();
+  public Map<PrnfbVariable, String> getVariables() {
+    final Map<PrnfbVariable, String> variables = new HashMap<>();
 
     if (groups != null) {
-      variables.put(PULL_REQUEST_USER_GROUPS, Suppliers.ofInstance(Joiner.on(',').join(groups)));
+      variables.put(PULL_REQUEST_USER_GROUPS, String.join(",", groups));
     }
 
     if (button != null) {
-      variables.put(BUTTON_TRIGGER_TITLE, Suppliers.ofInstance(button.getName()));
+      variables.put(BUTTON_TRIGGER_TITLE, button.getName());
     }
 
     if (!isNullOrEmpty(formData)) {
-      variables.put(BUTTON_FORM_DATA, Suppliers.ofInstance(formData));
+      variables.put(BUTTON_FORM_DATA, formData);
     }
 
     if (pullRequestEvent != null) {
       if (pullRequestEvent instanceof PullRequestCommentEvent) {
         final PullRequestCommentEvent pullRequestCommentEvent =
             (PullRequestCommentEvent) pullRequestEvent;
+        variables.put(PULL_REQUEST_COMMENT_TEXT, pullRequestCommentEvent.getComment().getText());
         variables.put(
-            PULL_REQUEST_COMMENT_TEXT,
-            () -> {
-              return pullRequestCommentEvent.getComment().getText();
-            });
-        variables.put(
-            PULL_REQUEST_COMMENT_ACTION,
-            () -> {
-              return pullRequestCommentEvent.getCommentAction().name();
-            });
-        variables.put(
-            PULL_REQUEST_COMMENT_ID,
-            () -> {
-              return pullRequestCommentEvent.getComment().getId() + "";
-            });
+            PULL_REQUEST_COMMENT_ACTION, pullRequestCommentEvent.getCommentAction().name());
+        variables.put(PULL_REQUEST_COMMENT_ID, pullRequestCommentEvent.getComment().getId() + "");
       } else if (pullRequestEvent instanceof PullRequestRescopedEvent) {
         final PullRequestRescopedEvent pullRequestRescopedEvent =
             (PullRequestRescopedEvent) pullRequestEvent;
         variables.put(
-            PULL_REQUEST_PREVIOUS_FROM_HASH,
-            () -> {
-              if (pullRequestEvent instanceof PullRequestRescopedEvent) {
-                return pullRequestRescopedEvent.getPreviousFromHash();
-              }
-              return "";
-            });
-        variables.put(
-            PULL_REQUEST_PREVIOUS_TO_HASH,
-            () -> {
-              if (pullRequestEvent instanceof PullRequestRescopedEvent) {
-                return pullRequestRescopedEvent.getPreviousToHash();
-              }
-              return "";
-            });
+            PULL_REQUEST_PREVIOUS_FROM_HASH, pullRequestRescopedEvent.getPreviousFromHash());
+        variables.put(PULL_REQUEST_PREVIOUS_TO_HASH, pullRequestRescopedEvent.getPreviousToHash());
       } else if (pullRequestEvent instanceof PullRequestMergedEvent) {
         variables.put(
             PULL_REQUEST_MERGE_COMMIT,
-            new Supplier<String>() {
-              @Override
-              public String get() {
-                return ((PullRequestMergedEvent) pullRequestEvent).getCommit().getId();
-              }
-            });
+            ((PullRequestMergedEvent) pullRequestEvent).getCommit().getId());
       }
     }
-
     return variables;
   }
 }

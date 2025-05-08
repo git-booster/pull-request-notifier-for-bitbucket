@@ -1,9 +1,6 @@
 package se.bjurr.prnfb.service;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.base.Throwables.propagate;
-import static java.net.URLEncoder.encode;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
 import static se.bjurr.prnfb.service.JsonEscaper.jsonEscape;
 import static se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR.HTML;
@@ -16,9 +13,8 @@ import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Map;
 import java.util.regex.Matcher;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -48,7 +44,7 @@ public class PrnfbRenderer {
    * Contains special variables that are only available for specific events like {@link
    * PrnfbVariable#BUTTON_TRIGGER_TITLE} and {@link PrnfbVariable#PULL_REQUEST_COMMENT_TEXT}.
    */
-  private final Map<PrnfbVariable, Supplier<String>> variables;
+  private final Map<PrnfbVariable, String> variables;
 
   PrnfbRenderer(
       PullRequest pullRequest,
@@ -57,7 +53,7 @@ public class PrnfbRenderer {
       RepositoryService repositoryService,
       ApplicationPropertiesService propertiesService,
       PrnfbNotification prnfbNotification,
-      Map<PrnfbVariable, Supplier<String>> variables,
+      Map<PrnfbVariable, String> variables,
       SecurityService securityService) {
     this.pullRequest = pullRequest;
     this.pullRequestAction = pullRequestAction;
@@ -70,21 +66,20 @@ public class PrnfbRenderer {
   }
 
   private boolean containsVariable(String string, final String regExpStr) {
-    if (isNullOrEmpty(string)) {
+    if (string == null || string.isEmpty()) {
       return false;
     }
     return string.contains(regExpStr.replaceAll("\\\\", ""));
   }
 
-  @VisibleForTesting
-  String getRenderedStringResolved(
+  public String getRenderedStringResolved(
       String string, ENCODE_FOR encodeFor, final String regExpStr, String resolved) {
-    String replaceWith = null;
+    String replaceWith;
     if (encodeFor == URL) {
       try {
-        replaceWith = encode(resolved, UTF_8.name());
+        replaceWith = URLEncoder.encode(resolved, UTF_8.name());
       } catch (final UnsupportedEncodingException e) {
-        propagate(e);
+        throw new RuntimeException(e);
       }
     } else if (encodeFor == HTML) {
       replaceWith = StringEscapeUtils.escapeHtml4(resolved).replaceAll("(\r\n|\n)", "<br />");
@@ -102,8 +97,7 @@ public class PrnfbRenderer {
     return string;
   }
 
-  @VisibleForTesting
-  String regexp(PrnfbVariable variable) {
+  public String regexp(PrnfbVariable variable) {
     return "\\$\\{" + variable.name() + "\\}";
   }
 

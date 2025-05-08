@@ -1,12 +1,14 @@
 package se.bjurr.prnfb.http;
 
-import static com.google.common.base.Optional.fromNullable;
+import static java.util.Optional.ofNullable;
+import static org.slf4j.LoggerFactory.getLogger;
 
-import com.google.common.base.Optional;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.util.Optional;
+import org.slf4j.Logger;
 import se.bjurr.prnfb.settings.PrnfbSettingsData;
 
 /**
@@ -16,6 +18,7 @@ import se.bjurr.prnfb.settings.PrnfbSettingsData;
  * Philip Dodds (pdodds) https://github.com/pdodds
  */
 public class ClientKeyStore {
+  private static final Logger LOG = getLogger(ClientKeyStore.class);
 
   private KeyStore keyStore = null;
   private char[] password = null;
@@ -32,14 +35,15 @@ public class ClientKeyStore {
 
         this.keyStore.load(new FileInputStream(keyStoreFile), this.password);
       } catch (Exception e) {
-        throw new RuntimeException(
-            "Unable to build keystore from " + keyStoreFile.getAbsolutePath(), e);
+        String msg = "Failed to load keystore [" + settings.getKeyStore().orElse("undefined") + "]";
+        String type = " Type=" + settings.getKeyStoreType();
+        LOG.warn("Pull-Request-Notifier-For-Bitbucket - " + msg + type + " - " + e, e);
       }
     }
   }
 
   public Optional<KeyStore> getKeyStore() {
-    return fromNullable(this.keyStore);
+    return ofNullable(this.keyStore);
   }
 
   public char[] getPassword() {

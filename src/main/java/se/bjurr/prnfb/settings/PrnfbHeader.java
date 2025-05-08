@@ -1,13 +1,15 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.nullToEmpty;
+import static se.bjurr.prnfb.Util.checkNotNull;
+import static se.bjurr.prnfb.Util.emptyToNull;
+import static se.bjurr.prnfb.Util.nullToEmpty;
 
 public class PrnfbHeader {
 
-  private final String name;
-  private final String value;
+  private String name;
+  private String value;
+
+  public PrnfbHeader() {}
 
   public PrnfbHeader(String name, String value) {
     this.name = checkNotNull(emptyToNull(nullToEmpty(name).trim()), "Header name must be set");
@@ -49,6 +51,14 @@ public class PrnfbHeader {
 
   public String getValue() {
     return this.value;
+  }
+
+  public void setName(String s) {
+    this.name = s;
+  }
+
+  public void setValue(String s) {
+    this.value = s;
   }
 
   @Override

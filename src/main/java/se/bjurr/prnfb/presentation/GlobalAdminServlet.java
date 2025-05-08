@@ -1,38 +1,44 @@
 package se.bjurr.prnfb.presentation;
 
-import static com.google.common.base.Optional.absent;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.collect.ImmutableMap.of;
-import static com.google.common.collect.Maps.newHashMap;
+import static java.util.Optional.empty;
+import static se.bjurr.prnfb.Util.immutableMap;
 
 import com.atlassian.bitbucket.project.Project;
 import com.atlassian.bitbucket.project.ProjectService;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.repository.RepositoryService;
+import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.atlassian.templaterenderer.TemplateRenderer;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.http.HttpUtil;
 import se.bjurr.prnfb.service.UserCheckService;
 
+@ExportAsService({GlobalAdminServlet.class})
+@Named("GlobalAdminServlet")
 public class GlobalAdminServlet extends HttpServlet {
   private static final long serialVersionUID = 3846987953228399693L;
-  private final LoginUriProvider loginUriProvider;
-  private final TemplateRenderer renderer;
-  private final RepositoryService repositoryService;
-  private final ProjectService projectService;
-  private final UserCheckService userCheckService;
-  private final UserManager userManager;
 
+  @ComponentImport private final LoginUriProvider loginUriProvider;
+  @ComponentImport private final TemplateRenderer renderer;
+  @ComponentImport private final RepositoryService repositoryService;
+  @ComponentImport private final ProjectService projectService;
+  @ComponentImport private final UserCheckService userCheckService;
+  @ComponentImport private final UserManager userManager;
+
+  @Inject
   public GlobalAdminServlet(
       UserManager userManager,
       LoginUriProvider loginUriProvider,
@@ -76,7 +82,7 @@ public class GlobalAdminServlet extends HttpServlet {
           this.userCheckService.isAdmin(user.getUserKey(), projectKey, repositorySlug);
       boolean isSystemAdmin = this.userCheckService.isSystemAdmin(user.getUserKey());
 
-      Map<String, Object> context = newHashMap();
+      Map<String, Object> context = new HashMap<>();
 
       String trace = request.getParameter("trace");
       if ("y".equalsIgnoreCase(trace)) {
@@ -102,27 +108,14 @@ public class GlobalAdminServlet extends HttpServlet {
 
       if (repository.isPresent()) {
         context =
-            of( //
-                "repository",
-                repository.get(), //
-                "isAdmin",
-                isAdmin, //
-                "isSystemAdmin",
-                isSystemAdmin);
+            immutableMap(
+                "repository", repository.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
       } else if (project.isPresent()) {
         context =
-            of( //
-                "project",
-                project.get(), //
-                "isAdmin",
-                isAdmin, //
-                "isSystemAdmin",
-                isSystemAdmin);
+            immutableMap(
+                "project", project.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
       } else {
-        context =
-            of( //
-                "isAdmin", isAdmin, //
-                "isSystemAdmin", isSystemAdmin);
+        context = immutableMap("isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
       }
 
       response.setContentType("text/html;charset=UTF-8");
@@ -131,7 +124,7 @@ public class GlobalAdminServlet extends HttpServlet {
           context, //
           response.getWriter());
     } catch (Exception e) {
-      propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -144,11 +137,10 @@ public class GlobalAdminServlet extends HttpServlet {
     return URI.create(builder.toString());
   }
 
-  @VisibleForTesting
-  Optional<Project> getProject(String pathInfo) {
+  public Optional<Project> getProject(String pathInfo) {
     Optional<String[]> componentsOpt = getComponents(pathInfo);
     if (!componentsOpt.isPresent() || componentsOpt.get().length != 1) {
-      return absent();
+      return empty();
     }
     String[] components = componentsOpt.get();
     String projectKey = components[0];
@@ -156,17 +148,16 @@ public class GlobalAdminServlet extends HttpServlet {
     return Optional.of(project);
   }
 
-  @VisibleForTesting
-  Optional<Repository> getRepository(String pathInfo) {
+  public Optional<Repository> getRepository(String pathInfo) {
     Optional<String[]> componentsOpt = getComponents(pathInfo);
     if (!componentsOpt.isPresent() || componentsOpt.get().length != 2) {
-      return absent();
+      return empty();
     }
     String[] components = componentsOpt.get();
     String project = components[0];
     String repoSlug = components[1];
     final Repository repository =
-        checkNotNull(
+        Util.checkNotNull(
             this.repositoryService.getBySlug(project, repoSlug), //
             "Did not find " + project + " " + repoSlug);
     return Optional.of(repository);
@@ -174,15 +165,15 @@ public class GlobalAdminServlet extends HttpServlet {
 
   private Optional<String[]> getComponents(String pathInfo) {
     if (pathInfo == null || pathInfo.isEmpty()) {
-      return absent();
+      return empty();
     }
     int indexOf = pathInfo.indexOf("prnfb/admin/");
     if (indexOf == -1) {
-      return absent();
+      return empty();
     }
     String root = pathInfo.substring(indexOf + "prnfb/admin/".length());
     if (root.isEmpty()) {
-      return absent();
+      return empty();
     }
     String[] split = root.split("/");
     return Optional.of(split);

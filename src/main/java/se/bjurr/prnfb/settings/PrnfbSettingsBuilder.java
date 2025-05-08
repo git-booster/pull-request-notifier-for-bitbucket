@@ -1,7 +1,6 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.collect.Lists.newArrayList;
+import static se.bjurr.prnfb.Util.firstNotNull;
 import static se.bjurr.prnfb.settings.PrnfbSettingsDataBuilder.prnfbSettingsDataBuilder;
 
 import java.util.ArrayList;
@@ -21,17 +20,16 @@ public class PrnfbSettingsBuilder {
   private PrnfbSettingsData prnfbSettingsData;
 
   private PrnfbSettingsBuilder() {
-    this.notifications = newArrayList();
-    this.buttons = newArrayList();
+    this.notifications = new ArrayList<>();
+    this.buttons = new ArrayList<>();
     this.prnfbSettingsData =
         prnfbSettingsDataBuilder() //
             .build();
   }
 
   private PrnfbSettingsBuilder(PrnfbSettings settings) {
-    this.notifications =
-        firstNonNull(settings.getNotifications(), new ArrayList<PrnfbNotification>());
-    this.buttons = firstNonNull(settings.getButtons(), new ArrayList<PrnfbButton>());
+    this.notifications = firstNotNull(settings.getNotifications(), new ArrayList<>());
+    this.buttons = firstNotNull(settings.getButtons(), new ArrayList<>());
     this.prnfbSettingsData = settings.getPrnfbSettingsData();
   }
 

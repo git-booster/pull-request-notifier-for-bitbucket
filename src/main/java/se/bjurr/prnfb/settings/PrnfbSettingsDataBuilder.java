@@ -19,9 +19,9 @@ public class PrnfbSettingsDataBuilder {
 
   private PrnfbSettingsDataBuilder(PrnfbSettingsData settings) {
     this.shouldAcceptAnyCertificate = settings.isShouldAcceptAnyCertificate();
-    this.keyStore = settings.getKeyStore().orNull();
+    this.keyStore = settings.getKeyStore().orElse(null);
     this.keyStoreType = settings.getKeyStoreType();
-    this.keyStorePassword = settings.getKeyStorePassword().orNull();
+    this.keyStorePassword = settings.getKeyStorePassword().orElse(null);
     this.adminRestriction = settings.getAdminRestriction();
   }
 

@@ -1,14 +1,12 @@
 package se.bjurr.prnfb.http;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Throwables.propagate;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.atlassian.event.api.EventListener;
 import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.sal.api.lifecycle.LifecycleAware;
-import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.net.URI;
 import java.security.cert.X509Certificate;
@@ -169,7 +167,7 @@ public class HttpUtil implements LifecycleAware {
           httpResponse.close();
         }
       } catch (final IOException e) {
-        propagate(e);
+        throw new RuntimeException(e);
       }
     }
     return null;
@@ -229,7 +227,11 @@ public class HttpUtil implements LifecycleAware {
               .build();
       cm = new PoolingHttpClientConnectionManager(registry);
     } catch (final Exception e) {
-      propagate(e);
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      } else {
+        throw new RuntimeException(e);
+      }
     }
 
     final RequestConfig config =
@@ -250,8 +252,7 @@ public class HttpUtil implements LifecycleAware {
     builder.setConnectionManager(cm);
   }
 
-  @VisibleForTesting
-  private static void configureForProxy(
+  public static void configureForProxy(
       final UrlInvoker u, final HttpHost h, final HttpClientBuilder builder) {
     if (u.getProxyUser().isPresent() && u.getProxyPassword().isPresent()) {
       final String username = u.getProxyUser().get();

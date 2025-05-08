@@ -117,12 +117,13 @@ public class NotificationServletTest {
   @Test
   public void testThatNotificationCanBeListedPerProject() throws Exception {
     final List<PrnfbNotification> notifications = newArrayList(this.notification1);
-    when(this.settingsService.getNotifications(this.notificationDto1.getProjectKey().orNull())) //
+    when(this.settingsService.getNotifications(
+            this.notificationDto1.getProjectKey().orElse(null))) //
         .thenReturn(notifications);
     when(userCheckService.filterAdminAllowed(notifications)) //
         .thenReturn(notifications);
 
-    final Response actual = this.sut.get(this.notificationDto1.getProjectKey().orNull());
+    final Response actual = this.sut.get(this.notificationDto1.getProjectKey().orElse(null));
     @SuppressWarnings("unchecked")
     final Iterable<NotificationDTO> actualList = (Iterable<NotificationDTO>) actual.getEntity();
 
@@ -135,16 +136,16 @@ public class NotificationServletTest {
   public void testThatNotificationCanBeListedPerProjectAndRepo() throws Exception {
     final List<PrnfbNotification> notifications = newArrayList(this.notification1);
     when(this.settingsService.getNotifications(
-            this.notificationDto1.getProjectKey().orNull(),
-            this.notificationDto1.getRepositorySlug().orNull())) //
+            this.notificationDto1.getProjectKey().orElse(null),
+            this.notificationDto1.getRepositorySlug().orElse(null))) //
         .thenReturn(notifications);
     when(userCheckService.filterAdminAllowed(notifications)) //
         .thenReturn(notifications);
 
     final Response actual =
         this.sut.get(
-            this.notificationDto1.getProjectKey().orNull(),
-            this.notificationDto1.getRepositorySlug().orNull());
+            this.notificationDto1.getProjectKey().orElse(null),
+            this.notificationDto1.getRepositorySlug().orElse(null));
     @SuppressWarnings("unchecked")
     final Iterable<NotificationDTO> actualList = (Iterable<NotificationDTO>) actual.getEntity();
 

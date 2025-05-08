@@ -1,27 +1,29 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Strings.emptyToNull;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
+import static se.bjurr.prnfb.Util.emptyToNull;
+import static se.bjurr.prnfb.Util.firstNotNull;
 
-import com.google.common.base.Optional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import se.bjurr.prnfb.presentation.dto.ON_OR_OFF;
 
-public class PrnfbButton implements HasUuid, Restricted {
+public class PrnfbButton implements HasUuid, Restricted, Comparable {
 
-  private final ON_OR_OFF confirmation;
-  private final String name;
-  private final String projectKey;
-  private final String repositorySlug;
-  private final List<PrnfbButtonFormElement> buttonFormElementList;
-  private final USER_LEVEL userLevel;
-  private final UUID uuid;
-  private final String confirmationText;
-  private final String redirectUrl;
+  private ON_OR_OFF confirmation;
+  private String name;
+  private String projectKey;
+  private String repositorySlug;
+  private List<PrnfbButtonFormElement> buttonFormElementList;
+  private USER_LEVEL userLevel;
+  private UUID uuid;
+  private String confirmationText;
+  private String redirectUrl;
+
+  public PrnfbButton() {}
 
   public PrnfbButton(
       UUID uuid,
@@ -33,7 +35,7 @@ public class PrnfbButton implements HasUuid, Restricted {
       String confirmationText,
       String redirectUrl,
       List<PrnfbButtonFormElement> buttonFormElementList) {
-    this.uuid = firstNonNull(uuid, randomUUID());
+    this.uuid = firstNotNull(uuid, randomUUID());
     this.name = name;
     this.userLevel = userLevel;
     this.confirmation = confirmation;
@@ -42,7 +44,7 @@ public class PrnfbButton implements HasUuid, Restricted {
     this.confirmationText = emptyToNull(confirmationText);
     this.redirectUrl = emptyToNull(redirectUrl);
     this.buttonFormElementList =
-        firstNonNull(buttonFormElementList, new ArrayList<PrnfbButtonFormElement>());
+        firstNotNull(buttonFormElementList, new ArrayList<PrnfbButtonFormElement>());
   }
 
   public String getConfirmationText() {
@@ -63,12 +65,12 @@ public class PrnfbButton implements HasUuid, Restricted {
 
   @Override
   public Optional<String> getProjectKey() {
-    return fromNullable(this.projectKey);
+    return ofNullable(this.projectKey);
   }
 
   @Override
   public Optional<String> getRepositorySlug() {
-    return fromNullable(this.repositorySlug);
+    return ofNullable(this.repositorySlug);
   }
 
   public USER_LEVEL getUserLevel() {
@@ -192,5 +194,16 @@ public class PrnfbButton implements HasUuid, Restricted {
         + ", redirectUrl="
         + redirectUrl
         + "]";
+  }
+
+  @Override
+  public int compareTo(Object o) {
+    String s1 = toString();
+    String s2 = ((PrnfbButton) o).toString();
+    int c = s1.compareToIgnoreCase(s2);
+    if (c == 0) {
+      c = s1.compareTo(s2);
+    }
+    return c;
   }
 }

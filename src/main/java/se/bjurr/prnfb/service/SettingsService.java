@@ -1,13 +1,8 @@
 package se.bjurr.prnfb.service;
 
 import static com.atlassian.bitbucket.permission.Permission.ADMIN;
-import static com.google.common.base.Joiner.on;
-import static com.google.common.base.Predicates.not;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.find;
-import static com.google.common.collect.Iterables.tryFind;
-import static com.google.common.collect.Lists.newArrayList;
+import static se.bjurr.prnfb.Util.findUuidMatch;
+import static se.bjurr.prnfb.Util.newListWithoutUuid;
 import static se.bjurr.prnfb.settings.PrnfbNotificationBuilder.prnfbNotificationBuilder;
 import static se.bjurr.prnfb.settings.PrnfbSettings.UNCHANGED;
 import static se.bjurr.prnfb.settings.PrnfbSettingsBuilder.prnfbSettingsBuilder;
@@ -21,16 +16,16 @@ import com.atlassian.sal.api.pluginsettings.PluginSettings;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.transaction.TransactionCallback;
 import com.atlassian.sal.api.transaction.TransactionTemplate;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.http.HttpUtil;
-import se.bjurr.prnfb.settings.HasUuid;
 import se.bjurr.prnfb.settings.PrnfbButton;
 import se.bjurr.prnfb.settings.PrnfbNotification;
 import se.bjurr.prnfb.settings.PrnfbSettings;
@@ -42,7 +37,12 @@ public class SettingsService {
 
   public static final String SETTINGS_STORAGE_KEY =
       "se.bjurr.prnfb.pull-request-notifier-for-bitbucket-3";
-  private static Gson gson = new Gson();
+  private static ObjectMapper objectMapper = new ObjectMapper();
+
+  static {
+    objectMapper.registerModule(new Jdk8Module());
+  }
+
   private final Logger logger = LoggerFactory.getLogger(SettingsService.class);
   private final PluginSettings pluginSettings;
   private final SecurityService securityService;
@@ -83,9 +83,8 @@ public class SettingsService {
             try {
               return doAddOrUpdateNotification(prnfbNotification);
             } catch (final ValidationException e) {
-              propagate(e);
+              throw new RuntimeException(e);
             }
-            return null;
           }
         });
   }
@@ -113,17 +112,18 @@ public class SettingsService {
   }
 
   public Optional<PrnfbButton> findButton(UUID uuid) {
-    return tryFind(getPrnfbSettings().getButtons(), withUuid(uuid));
+    return findUuidMatch(getPrnfbSettings().getButtons(), uuid);
   }
 
   public Optional<PrnfbNotification> findNotification(UUID notificationUuid) {
-    return tryFind(getPrnfbSettings().getNotifications(), withUuid(notificationUuid));
+    return findUuidMatch(getPrnfbSettings().getNotifications(), notificationUuid);
   }
 
   public PrnfbButton getButton(UUID buttionUuid) {
     final Optional<PrnfbButton> foundOpt = findButton(buttionUuid);
     if (!foundOpt.isPresent()) {
-      throw new RuntimeException(buttionUuid + " not fond in:\n" + on('\n').join(getButtons()));
+      throw new RuntimeException(
+          buttionUuid + " not fond in:\n" + Util.listToString("\n", getButtons()));
     }
     return foundOpt.get();
   }
@@ -134,7 +134,7 @@ public class SettingsService {
 
   public List<PrnfbButton> getButtons(Project p) {
     String projectKey = p.getKey();
-    final List<PrnfbButton> found = newArrayList();
+    final List<PrnfbButton> found = new ArrayList<>();
     for (final PrnfbButton candidate : getPrnfbSettings().getButtons()) {
       if (candidate.getProjectKey().isPresent()
           && candidate.getProjectKey().get().equals(projectKey)) {
@@ -148,7 +148,7 @@ public class SettingsService {
     String projectKey = r.getProject().getKey();
     String repositorySlug = r.getSlug();
 
-    final List<PrnfbButton> found = newArrayList();
+    final List<PrnfbButton> found = new ArrayList<>();
     for (final PrnfbButton candidate : getPrnfbSettings().getButtons()) {
       if (candidate.getProjectKey().isPresent()
           && candidate.getProjectKey().get().equals(projectKey) //
@@ -161,7 +161,7 @@ public class SettingsService {
   }
 
   public PrnfbNotification getNotification(UUID notificationUuid) {
-    return find(getPrnfbSettings().getNotifications(), withUuid(notificationUuid));
+    return findUuidMatch(getPrnfbSettings().getNotifications(), notificationUuid).orElse(null);
   }
 
   public List<PrnfbNotification> getNotifications() {
@@ -169,7 +169,7 @@ public class SettingsService {
   }
 
   public List<PrnfbNotification> getNotifications(String projectKey) {
-    final List<PrnfbNotification> found = newArrayList();
+    final List<PrnfbNotification> found = new ArrayList<>();
     for (final PrnfbNotification candidate : getPrnfbSettings().getNotifications()) {
       if (candidate.getProjectKey().isPresent()
           && candidate.getProjectKey().get().equals(projectKey)) {
@@ -180,7 +180,7 @@ public class SettingsService {
   }
 
   public List<PrnfbNotification> getNotifications(String projectKey, String repositorySlug) {
-    final List<PrnfbNotification> found = newArrayList();
+    final List<PrnfbNotification> found = new ArrayList<>();
     for (final PrnfbNotification candidate : getPrnfbSettings().getNotifications()) {
       if (candidate.getProjectKey().isPresent()
           && candidate.getProjectKey().get().equals(projectKey) //
@@ -192,7 +192,6 @@ public class SettingsService {
     return found;
   }
 
-  @VisibleForTesting
   public PrnfbSettings getPrnfbSettings() {
     return doGetPrnfbSettings(false);
   }
@@ -236,10 +235,10 @@ public class SettingsService {
       throws ValidationException {
     final UUID notificationUuid = newNotification.getUuid();
 
-    Optional<String> oldUser = Optional.absent();
-    Optional<String> oldPassword = Optional.absent();
-    Optional<String> oldProxyUser = Optional.absent();
-    Optional<String> oldProxyPassword = Optional.absent();
+    Optional<String> oldUser = Optional.empty();
+    Optional<String> oldPassword = Optional.empty();
+    Optional<String> oldProxyUser = Optional.empty();
+    Optional<String> oldProxyPassword = Optional.empty();
     final Optional<PrnfbNotification> oldNotification = findNotification(notificationUuid);
     if (oldNotification.isPresent()) {
       oldUser = oldNotification.get().getUser();
@@ -278,15 +277,14 @@ public class SettingsService {
   private String keepIfUnchanged(Optional<String> newValue, Optional<String> oldValue) {
     final boolean isUnchanged = newValue.isPresent() && newValue.get().equals(UNCHANGED);
     if (isUnchanged) {
-      return oldValue.orNull();
+      return oldValue.orElse(null);
     }
-    return newValue.orNull();
+    return newValue.orElse(null);
   }
 
   private void doDeleteButton(UUID uuid) {
     final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
-    final List<PrnfbButton> keep =
-        newArrayList(filter(originalSettings.getButtons(), not(withUuid(uuid))));
+    final List<PrnfbButton> keep = newListWithoutUuid(originalSettings.getButtons(), uuid);
     final PrnfbSettings withoutDeleted =
         prnfbSettingsBuilder(originalSettings) //
             .setButtons(keep) //
@@ -297,7 +295,7 @@ public class SettingsService {
   private void doDeleteNotification(UUID uuid) {
     final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
     final List<PrnfbNotification> keep =
-        newArrayList(filter(originalSettings.getNotifications(), not(withUuid(uuid))));
+        newListWithoutUuid(originalSettings.getNotifications(), uuid);
     final PrnfbSettings withoutDeleted =
         prnfbSettingsBuilder(originalSettings) //
             .setNotifications(keep) //
@@ -317,7 +315,13 @@ public class SettingsService {
           if (s != null) {
             // Successfully retrieved a real value... use it as our cache for next 33 seconds!
             nextCacheExpiry = System.currentTimeMillis() + 33333L;
-            cachedSettings = gson.fromJson(s, PrnfbSettings.class);
+
+            try {
+              cachedSettings = objectMapper.readValue(s, PrnfbSettings.class);
+            } catch (Exception e) {
+              throw new RuntimeException(
+                  "failed to deserialize JSON into PrnfbSettings object: " + e, e);
+            }
 
             // If the keystore or "accept-all-certificates" value changed, we need
             // to reset HttpUtil's connection-managers.
@@ -365,10 +369,15 @@ public class SettingsService {
             .setPrnfbSettingsData(adjustedSettingsData) //
             .build();
 
-    final String data = gson.toJson(adjustedSettings);
-    final PrnfbSettings adjustedSettingsReparsed = gson.fromJson(data, PrnfbSettings.class);
-    this.pluginSettings.put(SETTINGS_STORAGE_KEY, data);
-    cachedSettings = adjustedSettingsReparsed;
+    try {
+      final String data = objectMapper.writeValueAsString(adjustedSettings);
+      final PrnfbSettings adjustedSettingsReparsed =
+          objectMapper.readValue(data, PrnfbSettings.class);
+      this.pluginSettings.put(SETTINGS_STORAGE_KEY, data);
+      cachedSettings = adjustedSettingsReparsed;
+    } catch (Exception e) {
+      throw new RuntimeException("failed to reparse JSON into PrnfbSettings object: " + e, e);
+    }
   }
 
   private synchronized <T> T inSynchronizedTransaction(TransactionCallback<T> transactionCallback) {
@@ -381,14 +390,5 @@ public class SettingsService {
                 return SettingsService.this.transactionTemplate.execute(transactionCallback);
               }
             });
-  }
-
-  private Predicate<HasUuid> withUuid(UUID uuid) {
-    return new Predicate<HasUuid>() {
-      @Override
-      public boolean apply(HasUuid input) {
-        return input.getUuid().equals(uuid);
-      }
-    };
   }
 }

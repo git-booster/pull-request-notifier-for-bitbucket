@@ -11,7 +11,7 @@ public class SettingsTransformer {
   public static SettingsDataDTO toDto(PrnfbSettingsData settingsData) {
     SettingsDataDTO dto = new SettingsDataDTO();
     dto.setAdminRestriction(settingsData.getAdminRestriction());
-    dto.setKeyStore(settingsData.getKeyStore().orNull());
+    dto.setKeyStore(settingsData.getKeyStore().orElse(null));
     dto.setKeyStorePassword(UNCHANGED);
     dto.setKeyStoreType(settingsData.getKeyStoreType());
     dto.setShouldAcceptAnyCertificate(settingsData.isShouldAcceptAnyCertificate());

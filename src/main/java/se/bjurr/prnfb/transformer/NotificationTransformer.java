@@ -1,11 +1,11 @@
 package se.bjurr.prnfb.transformer;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Lists.newArrayList;
+import static se.bjurr.prnfb.Util.isNullOrEmpty;
 import static se.bjurr.prnfb.settings.PrnfbNotificationBuilder.prnfbNotificationBuilder;
 import static se.bjurr.prnfb.settings.PrnfbSettings.UNCHANGED;
 
 import com.atlassian.bitbucket.pull.PullRequestState;
+import java.util.ArrayList;
 import java.util.List;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
 import se.bjurr.prnfb.presentation.dto.HeaderDTO;
@@ -18,22 +18,22 @@ public class NotificationTransformer {
 
   public static NotificationDTO toNotificationDto(final PrnfbNotification from) {
     final NotificationDTO to = new NotificationDTO();
-    to.setProjectKey(from.getProjectKey().orNull());
-    to.setRepositorySlug(from.getRepositorySlug().orNull());
-    to.setFilterRegexp(from.getFilterRegexp().orNull());
-    to.setFilterString(from.getFilterString().orNull());
-    to.setInjectionUrl(from.getInjectionUrl().orNull());
-    to.setInjectionUrlRegexp(from.getInjectionUrlRegexp().orNull());
-    to.setVariableName(from.getVariableName().orNull());
-    to.setVariableRegex(from.getVariableRegex().orNull());
+    to.setProjectKey(from.getProjectKey().orElse(null));
+    to.setRepositorySlug(from.getRepositorySlug().orElse(null));
+    to.setFilterRegexp(from.getFilterRegexp().orElse(null));
+    to.setFilterString(from.getFilterString().orElse(null));
+    to.setInjectionUrl(from.getInjectionUrl().orElse(null));
+    to.setInjectionUrlRegexp(from.getInjectionUrlRegexp().orElse(null));
+    to.setVariableName(from.getVariableName().orElse(null));
+    to.setVariableRegex(from.getVariableRegex().orElse(null));
     to.setMethod(from.getMethod());
     to.setName(from.getName());
     to.setHeaders(toHeaders(from.getHeaders()));
-    to.setPostContent(from.getPostContent().orNull());
+    to.setPostContent(from.getPostContent().orElse(null));
     to.setPostContentEncoding(from.getPostContentEncoding());
     to.setProxyPort(from.getProxyPort());
-    to.setProxyServer(from.getProxyServer().orNull());
-    to.setProxySchema(from.getProxySchema().orNull());
+    to.setProxyServer(from.getProxyServer().orElse(null));
+    to.setProxySchema(from.getProxySchema().orElse(null));
     to.setProxyUser(UNCHANGED);
     to.setProxyPassword(UNCHANGED);
     to.setTriggerIfCanMerge(from.getTriggerIfCanMerge());
@@ -50,7 +50,7 @@ public class NotificationTransformer {
 
   public static List<NotificationDTO> toNotificationDtoList(
       final Iterable<PrnfbNotification> from) {
-    final List<NotificationDTO> to = newArrayList();
+    final List<NotificationDTO> to = new ArrayList<>();
     if (from != null) {
       for (final PrnfbNotification n : from) {
         to.add(toNotificationDto(n));
@@ -86,14 +86,14 @@ public class NotificationTransformer {
         .withUrl(from.getUrl()) //
         .withUser(from.getUser()) //
         .withUuid(from.getUuid()) //
-        .withRepositorySlug(from.getRepositorySlug().orNull()) //
-        .withProjectKey(from.getProjectKey().orNull()) //
+        .withRepositorySlug(from.getRepositorySlug().orElse(null)) //
+        .withProjectKey(from.getProjectKey().orElse(null)) //
         .withHttpVersion(from.getHttpVersion())
         .build();
   }
 
   private static List<HeaderDTO> toHeaders(final List<PrnfbHeader> headers) {
-    final List<HeaderDTO> to = newArrayList();
+    final List<HeaderDTO> to = new ArrayList<>();
     if (headers != null) {
       for (final PrnfbHeader h : headers) {
         final HeaderDTO t = new HeaderDTO();
@@ -106,7 +106,7 @@ public class NotificationTransformer {
   }
 
   private static List<PrnfbHeader> toHeaders(final NotificationDTO from) {
-    final List<PrnfbHeader> to = newArrayList();
+    final List<PrnfbHeader> to = new ArrayList<>();
     if (from.getHeaders() != null) {
       for (final HeaderDTO headerDto : from.getHeaders()) {
         if (!isNullOrEmpty(headerDto.getName()) && !isNullOrEmpty(headerDto.getValue())) {
@@ -119,7 +119,7 @@ public class NotificationTransformer {
 
   private static List<PrnfbPullRequestAction> toPrnfbPullRequestActions(
       final List<String> strings) {
-    final List<PrnfbPullRequestAction> to = newArrayList();
+    final List<PrnfbPullRequestAction> to = new ArrayList<>();
     if (strings != null) {
       for (final String from : strings) {
         to.add(PrnfbPullRequestAction.valueOf(from));
@@ -129,7 +129,7 @@ public class NotificationTransformer {
   }
 
   private static List<PullRequestState> toPullRequestStates(final List<String> strings) {
-    final List<PullRequestState> to = newArrayList();
+    final List<PullRequestState> to = new ArrayList<>();
     if (strings != null) {
       for (final String from : strings) {
         to.add(PullRequestState.valueOf(from));
@@ -139,7 +139,7 @@ public class NotificationTransformer {
   }
 
   private static List<String> toPullRequestStateStrings(final List<PullRequestState> list) {
-    final List<String> to = newArrayList();
+    final List<String> to = new ArrayList<>();
     if (list != null) {
       for (final Enum<?> e : list) {
         to.add(e.name());
@@ -149,7 +149,7 @@ public class NotificationTransformer {
   }
 
   private static List<String> toStrings(final List<PrnfbPullRequestAction> list) {
-    final List<String> to = newArrayList();
+    final List<String> to = new ArrayList<>();
     if (list != null) {
       for (final Enum<?> e : list) {
         to.add(e.name());

@@ -1,7 +1,5 @@
 package se.bjurr.prnfb.service;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Ordering.usingToString;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static se.bjurr.prnfb.listener.PrnfbPullRequestAction.BUTTON_TRIGGER;
@@ -9,7 +7,8 @@ import static se.bjurr.prnfb.listener.PrnfbPullRequestAction.BUTTON_TRIGGER;
 import com.atlassian.bitbucket.pull.PullRequest;
 import com.atlassian.bitbucket.pull.PullRequestService;
 import com.atlassian.bitbucket.repository.Repository;
-import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import se.bjurr.prnfb.http.ClientKeyStore;
@@ -42,8 +41,7 @@ public class ButtonsService {
     this.userCheckService = userCheckService;
   }
 
-  @VisibleForTesting
-  List<PrnfbButton> doGetButtons(
+  public List<PrnfbButton> doGetButtons(
       List<PrnfbNotification> notifications,
       ClientKeyStore clientKeyStore,
       final PullRequest pullRequest,
@@ -51,7 +49,7 @@ public class ButtonsService {
 
     String projectKey = pullRequest.getToRef().getRepository().getProject().getKey();
     String repositoryKey = pullRequest.getToRef().getRepository().getSlug();
-    List<PrnfbButton> allFoundButtons = newArrayList();
+    List<PrnfbButton> allFoundButtons = new ArrayList<>();
     for (PrnfbButton candidate : settingsService.getButtons()) {
       PrnfbButton button = settingsService.getButton(candidate.getUuid());
       VariablesContext variables =
@@ -72,12 +70,14 @@ public class ButtonsService {
         allFoundButtons.add(candidate);
       }
     }
-    allFoundButtons = usingToString().sortedCopy(allFoundButtons);
+
+    // Take copy and sort it.
+    allFoundButtons = new ArrayList<>(allFoundButtons);
+    Collections.sort(allFoundButtons);
     return allFoundButtons;
   }
 
-  @VisibleForTesting
-  List<NotificationResponse> doHandlePressed(
+  public List<NotificationResponse> doHandlePressed(
       UUID buttonUuid,
       ClientKeyStore clientKeyStore,
       boolean shouldAcceptAnyCertificate,
@@ -90,7 +90,7 @@ public class ButtonsService {
             .setFormData(formData) //
             .build();
 
-    List<NotificationResponse> successes = newArrayList();
+    List<NotificationResponse> successes = new ArrayList<>();
     for (PrnfbNotification prnfbNotification : settingsService.getNotifications()) {
       PrnfbPullRequestAction pullRequestAction = BUTTON_TRIGGER;
       PrnfbRenderer renderer =
@@ -199,8 +199,7 @@ public class ButtonsService {
    * @param repository Repository to check for
    * @return True if the button is either globally visible or matches with the given repository
    */
-  @VisibleForTesting
-  boolean isVisibleOnRepository(PrnfbButton button, Repository repository) {
+  public boolean isVisibleOnRepository(PrnfbButton button, Repository repository) {
     boolean projectOk = false;
     boolean repoOk = false;
 

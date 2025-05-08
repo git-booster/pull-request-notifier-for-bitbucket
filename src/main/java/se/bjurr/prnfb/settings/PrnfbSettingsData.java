@@ -1,9 +1,9 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Strings.emptyToNull;
+import static java.util.Optional.ofNullable;
+import static se.bjurr.prnfb.Util.emptyToNull;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 
 public class PrnfbSettingsData {
   private final USER_LEVEL adminRestriction;
@@ -75,11 +75,11 @@ public class PrnfbSettingsData {
   }
 
   public Optional<String> getKeyStore() {
-    return fromNullable(this.keyStore);
+    return ofNullable(this.keyStore);
   }
 
   public Optional<String> getKeyStorePassword() {
-    return fromNullable(this.keyStorePassword);
+    return ofNullable(this.keyStorePassword);
   }
 
   public String getKeyStoreType() {

@@ -3,9 +3,8 @@ package se.bjurr.prnfb.service;
 import static com.atlassian.bitbucket.permission.Permission.PROJECT_ADMIN;
 import static com.atlassian.bitbucket.permission.Permission.REPO_ADMIN;
 import static com.atlassian.bitbucket.permission.Permission.SYS_ADMIN;
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.collect.Iterables.filter;
 import static org.slf4j.LoggerFactory.getLogger;
+import static se.bjurr.prnfb.Util.emptyToNull;
 import static se.bjurr.prnfb.settings.USER_LEVEL.ADMIN;
 import static se.bjurr.prnfb.settings.USER_LEVEL.EVERYONE;
 
@@ -19,8 +18,8 @@ import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.sal.api.user.UserKey;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import se.bjurr.prnfb.settings.Restricted;
@@ -50,23 +49,14 @@ public class UserCheckService {
     this.securityService = securityService;
   }
 
-  public <R extends Restricted> Iterable<R> filterAllowed(USER_LEVEL adminRestriction, List<R> r) {
-    return filter(
-        r,
-        (c) ->
-            isAllowed( //
-                adminRestriction, //
-                c.getProjectKey().orNull(), //
-                c.getRepositorySlug().orNull()));
-  }
-
-  public <R extends Restricted> Iterable<R> filterAdminAllowed(List<R> list) {
+  public <R extends Restricted> List<R> filterAdminAllowed(List<R> list) {
     final USER_LEVEL adminRestriction =
         settingsService.getPrnfbSettingsData().getAdminRestriction();
-    return filter(list, (r) -> isAdminAllowed(r, adminRestriction));
+    return list.stream()
+        .filter(r -> isAdminAllowed(r, adminRestriction))
+        .collect(Collectors.toList());
   }
 
-  @VisibleForTesting
   public Project getProject(String projectKey) {
     try {
       return securityService //
@@ -84,7 +74,6 @@ public class UserCheckService {
     }
   }
 
-  @VisibleForTesting
   public Repository getRepo(String projectKey, String repositorySlug) {
     try {
       return securityService //
@@ -143,8 +132,8 @@ public class UserCheckService {
   }
 
   public boolean isAdminAllowed(Restricted restricted, USER_LEVEL adminRestriction) {
-    final String projectKey = restricted.getProjectKey().orNull();
-    final String repositorySlug = restricted.getRepositorySlug().orNull();
+    final String projectKey = restricted.getProjectKey().orElse(null);
+    final String repositorySlug = restricted.getRepositorySlug().orElse(null);
     return isAllowed(adminRestriction, projectKey, repositorySlug);
   }
 

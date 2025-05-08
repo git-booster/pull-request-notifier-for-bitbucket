@@ -1,11 +1,13 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static se.bjurr.prnfb.Util.checkNotNull;
 
 public class PrnfbButtonFormElementOption {
-  private final String label;
-  private final String name;
-  private final Boolean defaultValue;
+  private String label;
+  private String name;
+  private Boolean defaultValue;
+
+  public PrnfbButtonFormElementOption() {}
 
   public PrnfbButtonFormElementOption(String label, String name, Boolean defaultValue) {
     this.label = checkNotNull(label, "label");
@@ -23,6 +25,18 @@ public class PrnfbButtonFormElementOption {
 
   public String getName() {
     return name;
+  }
+
+  public void setDefaultValue(Boolean b) {
+    this.defaultValue = b;
+  }
+
+  public void setLabel(String s) {
+    this.label = s;
+  }
+
+  public void setName(String s) {
+    this.name = s;
   }
 
   @Override

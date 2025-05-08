@@ -1,6 +1,6 @@
 package se.bjurr.prnfb.settings;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 
 public interface Restricted {
 

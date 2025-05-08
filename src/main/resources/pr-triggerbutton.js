@@ -340,7 +340,7 @@ window.addEventListener("load", function load(event) {
 
     if (hasButtons) {
      // Okay, we really have some PR-Notifier buttons to show!  Let's show them!
-     $('#prNotifierButton').removeAttr('style').css("display", "block");
+     $('#prNotifierButton').removeAttr('style').css("display", "block").css("float", "right");
     }
 
    });

@@ -1,12 +1,12 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.UUID.randomUUID;
+import static se.bjurr.prnfb.Util.emptyToNull;
+import static se.bjurr.prnfb.Util.firstNotNull;
 import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.GET;
 
 import com.atlassian.bitbucket.pull.PullRequestState;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD;
@@ -79,29 +79,29 @@ public class PrnfbNotificationBuilder {
     final PrnfbNotificationBuilder b = new PrnfbNotificationBuilder();
 
     b.uuid = from.getUuid();
-    b.password = from.getPassword().orNull();
+    b.password = from.getPassword().orElse(null);
     b.triggers = from.getTriggers();
     b.updatePullRequestRefs = from.isUpdatePullRequestRefs();
     b.url = from.getUrl();
-    b.user = from.getUser().orNull();
-    b.filterRegexp = from.getFilterRegexp().orNull();
-    b.filterString = from.getFilterString().orNull();
+    b.user = from.getUser().orElse(null);
+    b.filterRegexp = from.getFilterRegexp().orElse(null);
+    b.filterString = from.getFilterString().orElse(null);
     b.method = from.getMethod();
-    b.postContent = from.getPostContent().orNull();
+    b.postContent = from.getPostContent().orElse(null);
     b.headers = from.getHeaders();
     b.triggerIgnoreStateList = from.getTriggerIgnoreStateList();
-    b.proxyUser = from.getProxyUser().orNull();
-    b.proxyPassword = from.getProxyPassword().orNull();
-    b.proxyServer = from.getProxyServer().orNull();
-    b.proxySchema = from.getProxySchema().orNull();
+    b.proxyUser = from.getProxyUser().orElse(null);
+    b.proxyPassword = from.getProxyPassword().orElse(null);
+    b.proxyServer = from.getProxyServer().orElse(null);
+    b.proxySchema = from.getProxySchema().orElse(null);
     b.proxyPort = from.getProxyPort();
-    b.projectKey = from.getProjectKey().orNull();
-    b.repositorySlug = from.getRepositorySlug().orNull();
+    b.projectKey = from.getProjectKey().orElse(null);
+    b.repositorySlug = from.getRepositorySlug().orElse(null);
     b.name = from.getName();
-    b.injectionUrl = from.getInjectionUrl().orNull();
-    b.injectionUrlRegexp = from.getInjectionUrlRegexp().orNull();
-    b.variableName = from.getVariableName().orNull();
-    b.variableRegex = from.getVariableRegex().orNull();
+    b.injectionUrl = from.getInjectionUrl().orElse(null);
+    b.injectionUrlRegexp = from.getInjectionUrlRegexp().orElse(null);
+    b.variableName = from.getVariableName().orElse(null);
+    b.variableRegex = from.getVariableRegex().orElse(null);
     b.triggerIfCanMerge = from.getTriggerIfCanMerge();
     b.postContentEncoding = from.getPostContentEncoding();
     b.httpVersion = from.getHttpVersion();
@@ -110,7 +110,7 @@ public class PrnfbNotificationBuilder {
 
   private String filterRegexp;
   private String filterString;
-  private List<PrnfbHeader> headers = newArrayList();
+  private List<PrnfbHeader> headers = new ArrayList<>();
   private String injectionUrl;
   private String injectionUrlRegexp;
   private String variableName;
@@ -126,8 +126,8 @@ public class PrnfbNotificationBuilder {
   private String proxyUser;
   private String repositorySlug;
   private TRIGGER_IF_MERGE triggerIfCanMerge;
-  private List<PullRequestState> triggerIgnoreStateList = newArrayList();
-  private List<PrnfbPullRequestAction> triggers = newArrayList();
+  private List<PullRequestState> triggerIgnoreStateList = new ArrayList<>();
+  private List<PrnfbPullRequestAction> triggers = new ArrayList<>();
   private boolean updatePullRequestRefs;
   private String url;
   private String user;
@@ -309,7 +309,7 @@ public class PrnfbNotificationBuilder {
   }
 
   public PrnfbNotificationBuilder withMethod(final HTTP_METHOD method) {
-    this.method = firstNonNull(method, GET);
+    this.method = firstNotNull(method, GET);
     return this;
   }
 

@@ -1,8 +1,6 @@
 package se.bjurr.prnfb.listener;
 
 import static com.atlassian.bitbucket.permission.Permission.ADMIN;
-import static com.google.common.base.Optional.absent;
-import static com.google.common.base.Optional.of;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.regex.Pattern.compile;
@@ -33,8 +31,7 @@ import com.atlassian.bitbucket.scm.ScmService;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.event.api.EventListener;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import se.bjurr.prnfb.http.ClientKeyStore;
@@ -58,7 +55,6 @@ public class PrnfbPullRequestEventListener {
   private static final Logger LOG = getLogger(PrnfbPullRequestEventListener.class);
   private static Invoker mockedInvoker = null;
 
-  @VisibleForTesting
   public static void setInvoker(final Invoker invoker) {
     PrnfbPullRequestEventListener.mockedInvoker = invoker;
   }
@@ -148,7 +144,6 @@ public class PrnfbPullRequestEventListener {
         settings.isShouldAcceptAnyCertificate());
   }
 
-  @VisibleForTesting
   public void handleEventAsync(final PullRequestEvent pullRequestEvent) {
     executorService.execute(
         new Runnable() {
@@ -159,8 +154,7 @@ public class PrnfbPullRequestEventListener {
         });
   }
 
-  @VisibleForTesting
-  boolean ignoreBecauseOfConflicting(
+  public boolean ignoreBecauseOfConflicting(
       final TRIGGER_IF_MERGE triggerIfCanMerge, final boolean isConflicted) {
     return triggerIfCanMerge == NOT_CONFLICTING && isConflicted
         || //
@@ -257,11 +251,11 @@ public class PrnfbPullRequestEventListener {
       return null;
     }
 
-    Optional<String> postContent = absent();
+    Optional<String> postContent = Optional.empty();
     if (notification.getPostContent().isPresent()) {
       final ENCODE_FOR encodePostContentFor = notification.getPostContentEncoding();
       postContent =
-          of(
+          Optional.of(
               renderer.render(
                   notification.getPostContent().get(),
                   encodePostContentFor,

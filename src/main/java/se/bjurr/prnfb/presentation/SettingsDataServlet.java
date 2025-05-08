@@ -9,7 +9,11 @@ import static se.bjurr.prnfb.transformer.SettingsTransformer.toDto;
 import static se.bjurr.prnfb.transformer.SettingsTransformer.toPrnfbSettingsData;
 
 import com.atlassian.annotations.security.XsrfProtectionExcluded;
-import com.google.common.base.Optional;
+import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -23,11 +27,15 @@ import se.bjurr.prnfb.settings.PrnfbSettingsData;
 import se.bjurr.prnfb.settings.Restricted;
 import se.bjurr.prnfb.settings.USER_LEVEL;
 
+@ExportAsService({SettingsDataServlet.class})
+@Named("SettingsDataServlet")
 @Path("/settings")
 public class SettingsDataServlet {
-  private final SettingsService settingsService;
-  private final UserCheckService userCheckService;
 
+  @ComponentImport private final SettingsService settingsService;
+  @ComponentImport private final UserCheckService userCheckService;
+
+  @Inject
   public SettingsDataServlet(UserCheckService userCheckService, SettingsService settingsService) {
     this.userCheckService = userCheckService;
     this.settingsService = settingsService;
@@ -57,12 +65,12 @@ public class SettingsDataServlet {
         new Restricted() {
           @Override
           public Optional<String> getRepositorySlug() {
-            return Optional.absent();
+            return Optional.empty();
           }
 
           @Override
           public Optional<String> getProjectKey() {
-            return Optional.absent();
+            return Optional.empty();
           }
         },
         adminRestriction)) {

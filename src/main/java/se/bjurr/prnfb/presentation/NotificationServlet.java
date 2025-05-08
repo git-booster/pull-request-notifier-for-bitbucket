@@ -1,6 +1,5 @@
 package se.bjurr.prnfb.presentation;
 
-import static com.google.common.base.Throwables.propagate;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
@@ -11,9 +10,13 @@ import static se.bjurr.prnfb.transformer.NotificationTransformer.toNotificationD
 import static se.bjurr.prnfb.transformer.NotificationTransformer.toPrnfbNotification;
 
 import com.atlassian.annotations.security.XsrfProtectionExcluded;
+import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -28,11 +31,16 @@ import se.bjurr.prnfb.service.UserCheckService;
 import se.bjurr.prnfb.settings.PrnfbNotification;
 import se.bjurr.prnfb.settings.USER_LEVEL;
 
+@ExportAsService({NotificationServlet.class})
+@Named("NotificationServlet")
 @Path("/settings/notifications")
 public class NotificationServlet {
-  private final SettingsService settingsService;
-  private final UserCheckService userCheckService;
 
+  @ComponentImport private final SettingsService settingsService;
+
+  @ComponentImport private final UserCheckService userCheckService;
+
+  @Inject
   public NotificationServlet(SettingsService settingsService, UserCheckService userCheckService) {
     this.settingsService = settingsService;
     this.userCheckService = userCheckService;
@@ -57,7 +65,11 @@ public class NotificationServlet {
           .entity(createdDto) //
           .build();
     } catch (final Exception e) {
-      throw propagate(e);
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      } else {
+        throw new RuntimeException(e);
+      }
     }
   }
 

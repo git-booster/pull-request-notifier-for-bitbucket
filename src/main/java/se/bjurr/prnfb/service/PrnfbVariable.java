@@ -3,12 +3,6 @@ package se.bjurr.prnfb.service;
 import static com.atlassian.bitbucket.pull.PullRequestParticipantStatus.APPROVED;
 import static com.atlassian.bitbucket.pull.PullRequestParticipantStatus.NEEDS_WORK;
 import static com.atlassian.bitbucket.pull.PullRequestParticipantStatus.UNAPPROVED;
-import static com.google.common.base.Joiner.on;
-import static com.google.common.collect.Iterables.filter;
-import static com.google.common.collect.Iterables.transform;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Ordering.usingToString;
-import static com.google.common.collect.Sets.newTreeSet;
 import static java.util.regex.Pattern.compile;
 import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.GET;
 import static se.bjurr.prnfb.http.UrlInvoker.urlInvoker;
@@ -27,17 +21,17 @@ import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.NamedLink;
 import com.atlassian.bitbucket.util.Operation;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 import se.bjurr.prnfb.http.ClientKeyStore;
 import se.bjurr.prnfb.http.HttpResponse;
 import se.bjurr.prnfb.http.Invoker;
@@ -57,7 +51,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -74,11 +68,11 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final List<String> parts = newArrayList();
+          final List<String> parts = new ArrayList<>();
           for (final PrnfbVariable v : PrnfbVariable.values()) {
             if (v != EVERYTHING_URL //
                 && v != PULL_REQUEST_DESCRIPTION) {
@@ -86,7 +80,7 @@ public enum PrnfbVariable {
             }
           }
           Collections.sort(parts);
-          return on('&').join(parts);
+          return String.join("&", parts);
         }
       }),
   VARIABLE_REGEX_MATCH(
@@ -99,7 +93,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -149,7 +143,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -212,7 +206,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -229,7 +223,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -246,7 +240,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -263,7 +257,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -280,7 +274,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -297,7 +291,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -314,7 +308,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -331,7 +325,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -348,7 +342,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -365,7 +359,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -382,7 +376,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -399,7 +393,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -416,7 +410,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -433,7 +427,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -450,7 +444,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -472,7 +466,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -489,7 +483,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -506,7 +500,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -523,7 +517,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -540,7 +534,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -557,7 +551,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -574,7 +568,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -596,7 +590,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -613,7 +607,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfsNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -630,12 +624,12 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return Integer.toString(
-              newArrayList(filter(pullRequest.getParticipants(), isApproved)).size());
+          return Long.toString(
+              pullRequest.getParticipants().stream().filter(p -> p.isApproved()).count());
         }
       }),
   PULL_REQUEST_PARTICIPANTS_EMAIL(
@@ -648,12 +642,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return iterableToString(
-              transform(pullRequest.getParticipants(), (p) -> p.getUser().getEmailAddress()));
+
+          return listToString(
+              pullRequest
+                  .getParticipants()
+                  .stream()
+                  .map(p -> p.getUser().getEmailAddress())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS(
@@ -666,12 +665,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return iterableToString(
-              transform(pullRequest.getReviewers(), (p) -> p.getUser().getDisplayName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .map(p -> p.getUser().getDisplayName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_APPROVED_COUNT(
@@ -684,12 +688,12 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return Integer.toString(
-              newArrayList(filter(pullRequest.getReviewers(), isApproved)).size());
+          return Long.toString(
+              pullRequest.getReviewers().stream().filter(p -> p.isApproved()).count());
         }
       }),
   PULL_REQUEST_REVIEWERS_EMAIL(
@@ -702,12 +706,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return iterableToString(
-              transform(pullRequest.getReviewers(), (p) -> p.getUser().getEmailAddress()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .map(p -> p.getUser().getEmailAddress())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_NEEDS_WORK_SLUG(
@@ -720,13 +729,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == NEEDS_WORK);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getSlug()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == NEEDS_WORK)
+                  .map(p -> p.getUser().getSlug())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_NEEDS_WORK_EMAIL(
@@ -739,13 +753,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == NEEDS_WORK);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getEmailAddress()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == NEEDS_WORK)
+                  .map(p -> p.getUser().getEmailAddress())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_NEEDS_WORK_NAME(
@@ -758,13 +777,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == NEEDS_WORK);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == NEEDS_WORK)
+                  .map(p -> p.getUser().getName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_NEEDS_WORK_DISPLAY_NAME(
@@ -777,13 +801,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == NEEDS_WORK);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getDisplayName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == NEEDS_WORK)
+                  .map(p -> p.getUser().getDisplayName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_UNAPPROVED_SLUG(
@@ -796,13 +825,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == UNAPPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getSlug()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == UNAPPROVED)
+                  .map(p -> p.getUser().getSlug())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_UNAPPROVED_EMAIL(
@@ -815,13 +849,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == UNAPPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getEmailAddress()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == UNAPPROVED)
+                  .map(p -> p.getUser().getEmailAddress())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_UNAPPROVED_NAME(
@@ -834,13 +873,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == UNAPPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == UNAPPROVED)
+                  .map(p -> p.getUser().getName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_UNAPPROVED_DISPLAY_NAME(
@@ -853,13 +897,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == UNAPPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getDisplayName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == UNAPPROVED)
+                  .map(p -> p.getUser().getDisplayName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_APPROVED_SLUG(
@@ -872,13 +921,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == APPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getSlug()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == APPROVED)
+                  .map(p -> p.getUser().getSlug())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_APPROVED_EMAIL(
@@ -891,13 +945,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == APPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getEmailAddress()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == APPROVED)
+                  .map(p -> p.getUser().getEmailAddress())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_APPROVED_NAME(
@@ -910,13 +969,18 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == APPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getName()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == APPROVED)
+                  .map(p -> p.getUser().getName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_APPROVED_DISPLAY_NAME(
@@ -929,13 +993,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          final Iterable<PullRequestParticipant> reviewers =
-              filter(pullRequest.getReviewers(), (r) -> r.getStatus() == APPROVED);
-          return iterableToString(transform(reviewers, (p) -> p.getUser().getDisplayName()));
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .filter(p -> p.getStatus() == APPROVED)
+                  .map(p -> p.getUser().getDisplayName())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_ID(
@@ -948,12 +1016,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return iterableToString(
-              transform(pullRequest.getReviewers(), (p) -> Integer.toString(p.getUser().getId())));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .map(p -> "" + p.getUser().getId())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_REVIEWERS_SLUG(
@@ -966,12 +1039,17 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
-          return iterableToString(
-              transform(pullRequest.getReviewers(), (p) -> p.getUser().getSlug()));
+
+          return listToString(
+              pullRequest
+                  .getReviewers()
+                  .stream()
+                  .map(p -> p.getUser().getSlug())
+                  .collect(Collectors.toList()));
         }
       }),
   PULL_REQUEST_STATE(
@@ -984,7 +1062,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1001,7 +1079,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1018,7 +1096,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1035,7 +1113,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1052,7 +1130,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1074,7 +1152,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1091,7 +1169,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1108,7 +1186,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1125,7 +1203,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1142,7 +1220,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1159,7 +1237,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1176,7 +1254,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1198,7 +1276,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1215,7 +1293,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1232,7 +1310,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1249,7 +1327,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1266,7 +1344,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1283,7 +1361,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1300,7 +1378,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1317,7 +1395,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1334,7 +1412,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1351,7 +1429,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1368,7 +1446,7 @@ public enum PrnfbVariable {
             final RepositoryService repositoryService,
             final ApplicationPropertiesService propertiesService,
             final PrnfbNotification prnfbNotification,
-            final Map<PrnfbVariable, Supplier<String>> variables,
+            final Map<PrnfbVariable, String> variables,
             final ClientKeyStore clientKeyStore,
             final boolean shouldAcceptAnyCertificate,
             final SecurityService securityService) {
@@ -1386,14 +1464,6 @@ public enum PrnfbVariable {
     }
     return count.toString();
   }
-
-  private static final Predicate<PullRequestParticipant> isApproved =
-      new Predicate<PullRequestParticipant>() {
-        @Override
-        public boolean apply(final PullRequestParticipant input) {
-          return input.isApproved();
-        }
-      };
 
   private static Invoker mockedInvoker =
       new Invoker() {
@@ -1451,7 +1521,7 @@ public enum PrnfbVariable {
                         .repository(repository) //
                         .build();
                 final Set<NamedLink> cloneLinks = repositoryService.getCloneLinks(request);
-                final Set<String> allUrls = newTreeSet();
+                final Set<String> allUrls = new TreeSet<>();
                 final Iterator<NamedLink> itr = cloneLinks.iterator();
                 while (itr.hasNext()) {
                   allUrls.add(itr.next().getHref());
@@ -1477,11 +1547,11 @@ public enum PrnfbVariable {
   }
 
   private static String getOrEmpty(
-      final Map<PrnfbVariable, Supplier<String>> variables, final PrnfbVariable variable) {
+      final Map<PrnfbVariable, String> variables, final PrnfbVariable variable) {
     if (variables.get(variable) == null) {
       return "";
     }
-    return variables.get(variable).get();
+    return variables.get(variable);
   }
 
   private static String getPullRequestUrl(
@@ -1495,12 +1565,12 @@ public enum PrnfbVariable {
         + pullRequest.getId();
   }
 
-  private static String iterableToString(final Iterable<String> slist) {
-    final List<String> sorted = usingToString().sortedCopy(slist);
-    return on(',').join(sorted);
+  private static String listToString(final List<String> list) {
+    final List<String> copy = new ArrayList<>(list);
+    Collections.sort(copy);
+    return String.join(",", copy);
   }
 
-  @VisibleForTesting
   public static void setInvoker(final Invoker invoker) {
     PrnfbVariable.mockedInvoker = invoker;
   }
@@ -1518,7 +1588,7 @@ public enum PrnfbVariable {
       final RepositoryService repositoryService,
       final ApplicationPropertiesService propertiesService,
       final PrnfbNotification prnfbNotification,
-      final Map<PrnfbVariable, Supplier<String>> variables,
+      final Map<PrnfbVariable, String> variables,
       final ClientKeyStore clientKeyStore,
       final boolean shouldAcceptAnyCertificate,
       final SecurityService securityService) {

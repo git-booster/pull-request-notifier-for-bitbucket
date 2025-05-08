@@ -1,21 +1,20 @@
 package se.bjurr.prnfb.settings;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.nullToEmpty;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static java.util.regex.Pattern.compile;
+import static se.bjurr.prnfb.Util.checkNotNull;
+import static se.bjurr.prnfb.Util.emptyToNull;
+import static se.bjurr.prnfb.Util.firstNotNull;
+import static se.bjurr.prnfb.Util.nullToEmpty;
 import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.GET;
 import static se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR.NONE;
 import static se.bjurr.prnfb.settings.TRIGGER_IF_MERGE.ALWAYS;
 
 import com.atlassian.bitbucket.pull.PullRequestState;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
@@ -24,36 +23,38 @@ import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
 public class PrnfbNotification implements HasUuid, Restricted {
 
   private static final String DEFAULT_NAME = "Notification";
-  private final String filterRegexp;
-  private final String filterString;
-  private final List<PrnfbHeader> headers;
-  private final String injectionUrl;
-  private final String injectionUrlRegexp;
-  private final String variableName;
-  private final String variableRegex;
-  private final HTTP_METHOD method;
-  private final String name;
-  private final String password;
-  private final String postContent;
-  private final String projectKey;
-  private final String proxyPassword;
-  private final Integer proxyPort;
-  private final String proxyServer;
-  private final String proxyUser;
-  private final String repositorySlug;
-  private final TRIGGER_IF_MERGE triggerIfCanMerge;
-  private final List<PullRequestState> triggerIgnoreStateList;
-  private final List<PrnfbPullRequestAction> triggers;
-  private final boolean updatePullRequestRefs;
-  private final String url;
-  private final String user;
-  private final UUID uuid;
-  private final ENCODE_FOR postContentEncoding;
-  private final String proxySchema;
-  private final String httpVersion;
+  private String filterRegexp;
+  private String filterString;
+  private List<PrnfbHeader> headers;
+  private String injectionUrl;
+  private String injectionUrlRegexp;
+  private String variableName;
+  private String variableRegex;
+  private HTTP_METHOD method;
+  private String name;
+  private String password;
+  private String postContent;
+  private String projectKey;
+  private String proxyPassword;
+  private Integer proxyPort;
+  private String proxyServer;
+  private String proxyUser;
+  private String repositorySlug;
+  private TRIGGER_IF_MERGE triggerIfCanMerge;
+  private List<PullRequestState> triggerIgnoreStateList;
+  private List<PrnfbPullRequestAction> triggers;
+  private boolean updatePullRequestRefs;
+  private String url;
+  private String user;
+  private UUID uuid;
+  private ENCODE_FOR postContentEncoding;
+  private String proxySchema;
+  private String httpVersion;
+
+  public PrnfbNotification() {}
 
   public PrnfbNotification(final PrnfbNotificationBuilder builder) throws ValidationException {
-    this.uuid = firstNonNull(builder.getUUID(), randomUUID());
+    this.uuid = firstNotNull(builder.getUUID(), randomUUID());
     this.proxyUser = emptyToNull(nullToEmpty(builder.getProxyUser()).trim());
     this.proxyPassword = emptyToNull(nullToEmpty(builder.getProxyPassword()).trim());
     this.proxyServer = emptyToNull(nullToEmpty(builder.getProxyServer()).trim());
@@ -61,8 +62,8 @@ public class PrnfbNotification implements HasUuid, Restricted {
     this.proxyPort = builder.getProxyPort();
     this.headers = checkNotNull(builder.getHeaders());
     this.postContent = emptyToNull(nullToEmpty(builder.getPostContent()).trim());
-    this.method = firstNonNull(builder.getMethod(), GET);
-    this.triggerIfCanMerge = firstNonNull(builder.getTriggerIfCanMerge(), ALWAYS);
+    this.method = firstNotNull(builder.getMethod(), GET);
+    this.triggerIfCanMerge = firstNotNull(builder.getTriggerIfCanMerge(), ALWAYS);
     this.repositorySlug = emptyToNull(builder.getRepositorySlug());
     this.projectKey = emptyToNull(builder.getProjectKey());
     try {
@@ -85,20 +86,20 @@ public class PrnfbNotification implements HasUuid, Restricted {
     this.url = builder.getUrl();
     this.user = emptyToNull(nullToEmpty(builder.getUser()).trim());
     this.password = emptyToNull(nullToEmpty(builder.getPassword()).trim());
-    this.triggers = checkNotNull(builder.getTriggers(), "triggers");
+    this.triggers = checkNotNull(builder.getTriggers());
     if (this.triggers.isEmpty()) {
       throw new ValidationException("triggers", "At least one trigger must be selected.");
     }
     this.updatePullRequestRefs = builder.isUpdatePullRequestRefs();
     this.filterString = emptyToNull(nullToEmpty(builder.getFilterString()).trim());
     this.filterRegexp = emptyToNull(nullToEmpty(builder.getFilterRegexp()).trim());
-    this.name = firstNonNull(emptyToNull(nullToEmpty(builder.getName()).trim()), DEFAULT_NAME);
+    this.name = firstNotNull(emptyToNull(nullToEmpty(builder.getName()).trim()), DEFAULT_NAME);
     this.injectionUrl = emptyToNull(nullToEmpty(builder.getInjectionUrl()).trim());
     this.injectionUrlRegexp = emptyToNull(nullToEmpty(builder.getInjectionUrlRegexp()).trim());
     this.variableName = emptyToNull(nullToEmpty(builder.getVariableName()).trim());
     this.variableRegex = emptyToNull(nullToEmpty(builder.getVariableRegex()).trim());
     this.triggerIgnoreStateList = builder.getTriggerIgnoreStateList();
-    this.postContentEncoding = firstNonNull(builder.getPostContentEncoding(), NONE);
+    this.postContentEncoding = firstNotNull(builder.getPostContentEncoding(), NONE);
     this.httpVersion = builder.getHttpVersion();
   }
 
@@ -291,11 +292,11 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public Optional<String> getFilterRegexp() {
-    return fromNullable(this.filterRegexp);
+    return ofNullable(this.filterRegexp);
   }
 
   public Optional<String> getFilterString() {
-    return fromNullable(this.filterString);
+    return ofNullable(this.filterString);
   }
 
   public List<PrnfbHeader> getHeaders() {
@@ -303,19 +304,19 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public Optional<String> getInjectionUrl() {
-    return fromNullable(this.injectionUrl);
+    return ofNullable(this.injectionUrl);
   }
 
   public Optional<String> getInjectionUrlRegexp() {
-    return fromNullable(this.injectionUrlRegexp);
+    return ofNullable(this.injectionUrlRegexp);
   }
 
   public Optional<String> getVariableName() {
-    return fromNullable(this.variableName);
+    return ofNullable(this.variableName);
   }
 
   public Optional<String> getVariableRegex() {
-    return fromNullable(this.variableRegex);
+    return ofNullable(this.variableRegex);
   }
 
   public HTTP_METHOD getMethod() {
@@ -327,20 +328,20 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public Optional<String> getPassword() {
-    return fromNullable(this.password);
+    return ofNullable(this.password);
   }
 
   public Optional<String> getPostContent() {
-    return fromNullable(this.postContent);
+    return ofNullable(this.postContent);
   }
 
   @Override
   public Optional<String> getProjectKey() {
-    return fromNullable(this.projectKey);
+    return ofNullable(this.projectKey);
   }
 
   public Optional<String> getProxyPassword() {
-    return fromNullable(this.proxyPassword);
+    return ofNullable(this.proxyPassword);
   }
 
   public Integer getProxyPort() {
@@ -348,20 +349,20 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public Optional<String> getProxySchema() {
-    return fromNullable(this.proxySchema);
+    return ofNullable(this.proxySchema);
   }
 
   public Optional<String> getProxyServer() {
-    return fromNullable(this.proxyServer);
+    return ofNullable(this.proxyServer);
   }
 
   public Optional<String> getProxyUser() {
-    return fromNullable(this.proxyUser);
+    return ofNullable(this.proxyUser);
   }
 
   @Override
   public Optional<String> getRepositorySlug() {
-    return fromNullable(this.repositorySlug);
+    return ofNullable(this.repositorySlug);
   }
 
   public TRIGGER_IF_MERGE getTriggerIfCanMerge() {
@@ -385,7 +386,7 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public Optional<String> getUser() {
-    return fromNullable(this.user);
+    return ofNullable(this.user);
   }
 
   @Override
@@ -488,7 +489,7 @@ public class PrnfbNotification implements HasUuid, Restricted {
   }
 
   public ENCODE_FOR getPostContentEncoding() {
-    return MoreObjects.firstNonNull(this.postContentEncoding, ENCODE_FOR.NONE);
+    return firstNotNull(this.postContentEncoding, ENCODE_FOR.NONE);
   }
 
   public String getHttpVersion() {

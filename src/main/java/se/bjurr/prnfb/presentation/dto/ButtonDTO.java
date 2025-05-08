@@ -2,11 +2,10 @@ package se.bjurr.prnfb.presentation.dto;
 
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 
-import com.google.common.base.Optional;
-import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -16,8 +15,17 @@ import se.bjurr.prnfb.settings.USER_LEVEL;
 @XmlRootElement
 @XmlAccessorType(FIELD)
 public class ButtonDTO implements Comparable<ButtonDTO>, Restricted {
-  public static Type BUTTON_FORM_LIST_DTO_TYPE =
-      new TypeToken<ArrayList<ButtonFormElementDTO>>() {}.getType();
+  private static ArrayList<ButtonFormElementDTO> typeHolder = new ArrayList<>();
+
+  public static Type BUTTON_FORM_LIST_DTO_TYPE;
+
+  static {
+    try {
+      BUTTON_FORM_LIST_DTO_TYPE = ButtonDTO.class.getDeclaredField("typeHolder").getGenericType();
+    } catch (NoSuchFieldException | SecurityException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   private List<ButtonFormElementDTO> buttonFormList;
   /**
@@ -140,12 +148,12 @@ public class ButtonDTO implements Comparable<ButtonDTO>, Restricted {
 
   @Override
   public Optional<String> getProjectKey() {
-    return Optional.fromNullable(this.projectKey);
+    return Optional.ofNullable(this.projectKey);
   }
 
   @Override
   public Optional<String> getRepositorySlug() {
-    return Optional.fromNullable(this.repositorySlug);
+    return Optional.ofNullable(this.repositorySlug);
   }
 
   public USER_LEVEL getUserLevel() {

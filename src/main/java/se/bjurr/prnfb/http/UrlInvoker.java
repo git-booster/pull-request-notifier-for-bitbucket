@@ -1,26 +1,22 @@
 package se.bjurr.prnfb.http;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.absent;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.collect.Lists.newArrayList;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 import static org.apache.http.HttpVersion.HTTP_1_0;
 import static org.apache.http.HttpVersion.HTTP_1_1;
 import static org.slf4j.LoggerFactory.getLogger;
-import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.GET;
-import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.POST;
-import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.PUT;
+import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.*;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpVersion;
 import org.apache.http.ProtocolVersion;
@@ -51,7 +47,6 @@ public class UrlInvoker {
 
   private static final Logger LOG = getLogger(UrlInvoker.class);
 
-  @VisibleForTesting
   public static String getHeaderValue(final PrnfbHeader header) {
     return header.getValue();
   }
@@ -61,14 +56,14 @@ public class UrlInvoker {
   }
 
   private ClientKeyStore clientKeyStore;
-  private final List<PrnfbHeader> headers = newArrayList();
+  private final List<PrnfbHeader> headers = new ArrayList<>();
   private HTTP_METHOD method = GET;
-  private Optional<String> postContent = absent();
-  private Optional<String> proxyHost = absent();
-  private Optional<String> proxyPassword = absent();
-  private Optional<Integer> proxyPort = absent();
-  private Optional<String> proxySchema = absent();
-  private Optional<String> proxyUser = absent();
+  private Optional<String> postContent = empty();
+  private Optional<String> proxyHost = empty();
+  private Optional<String> proxyPassword = empty();
+  private Optional<Integer> proxyPort = empty();
+  private Optional<String> proxySchema = empty();
+  private Optional<String> proxyUser = empty();
   private HttpResponse response;
 
   private boolean shouldAcceptAnyCertificate;
@@ -167,7 +162,6 @@ public class UrlInvoker {
     this.response = response;
   }
 
-  @VisibleForTesting
   public boolean shouldAcceptAnyCertificate() {
     return this.shouldAcceptAnyCertificate;
   }
@@ -177,12 +171,10 @@ public class UrlInvoker {
     return this;
   }
 
-  @VisibleForTesting
   public boolean shouldAuthenticateProxy() {
     return getProxyUser().isPresent() && getProxyPassword().isPresent();
   }
 
-  @VisibleForTesting
   public boolean shouldPostContent() {
     return (this.method == POST || this.method == PUT) && this.postContent.isPresent();
   }
@@ -193,7 +185,8 @@ public class UrlInvoker {
 
   public HttpHost getHttpHostForProxy() {
     if (shouldUseProxy()) {
-      return new HttpHost(this.proxyHost.get(), this.proxyPort.get(), this.proxySchema.orNull());
+      return new HttpHost(
+          this.proxyHost.get(), this.proxyPort.get(), this.proxySchema.orElse(null));
     } else {
       return null;
     }
@@ -225,7 +218,7 @@ public class UrlInvoker {
   }
 
   public UrlInvoker withProxyPort(final Integer proxyPort) {
-    this.proxyPort = fromNullable(proxyPort);
+    this.proxyPort = ofNullable(proxyPort);
     return this;
   }
 
@@ -266,7 +259,7 @@ public class UrlInvoker {
     try {
       httpRequestBase.setURI(new URI(this.urlParam));
     } catch (final URISyntaxException e) {
-      propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -274,8 +267,7 @@ public class UrlInvoker {
     return this.urlParam.startsWith("https");
   }
 
-  @VisibleForTesting
-  HttpEntityEnclosingRequestBase newHttpEntityEnclosingRequestBase(
+  public HttpEntityEnclosingRequestBase newHttpEntityEnclosingRequestBase(
       final HTTP_METHOD method, final String entity) {
     final HttpEntityEnclosingRequestBase entityEnclosing =
         new HttpEntityEnclosingRequestBase() {
@@ -290,16 +282,14 @@ public class UrlInvoker {
     return entityEnclosing;
   }
 
-  @VisibleForTesting
-  HttpRequestBase newHttpRequestBase() {
+  public HttpRequestBase newHttpRequestBase() {
     if (shouldPostContent()) {
       return newHttpEntityEnclosingRequestBase(this.method, this.postContent.get());
     }
     return newHttpRequestBase(this.method);
   }
 
-  @VisibleForTesting
-  HttpRequestBase newHttpRequestBase(final HTTP_METHOD method) {
+  public HttpRequestBase newHttpRequestBase(final HTTP_METHOD method) {
     return new HttpRequestBase() {
       @Override
       public String getMethod() {

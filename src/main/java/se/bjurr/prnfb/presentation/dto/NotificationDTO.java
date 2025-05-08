@@ -2,8 +2,8 @@ package se.bjurr.prnfb.presentation.dto;
 
 import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 
-import com.google.common.base.Optional;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -286,12 +286,12 @@ public class NotificationDTO implements Comparable<NotificationDTO>, Restricted 
 
   @Override
   public Optional<String> getProjectKey() {
-    return Optional.fromNullable(this.projectKey);
+    return Optional.ofNullable(this.projectKey);
   }
 
   @Override
   public Optional<String> getRepositorySlug() {
-    return Optional.fromNullable(this.repositorySlug);
+    return Optional.ofNullable(this.repositorySlug);
   }
 
   public String getProxyPassword() {

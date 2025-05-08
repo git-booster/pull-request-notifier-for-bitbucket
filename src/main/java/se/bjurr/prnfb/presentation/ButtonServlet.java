@@ -1,6 +1,5 @@
 package se.bjurr.prnfb.presentation;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -15,12 +14,15 @@ import static se.bjurr.prnfb.transformer.ButtonTransformer.toTriggerResultDto;
 import com.atlassian.annotations.security.XsrfProtectionExcluded;
 import com.atlassian.bitbucket.project.Project;
 import com.atlassian.bitbucket.repository.Repository;
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
+import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -45,13 +47,16 @@ import se.bjurr.prnfb.service.UserCheckService;
 import se.bjurr.prnfb.settings.PrnfbButton;
 import se.bjurr.prnfb.settings.USER_LEVEL;
 
+@ExportAsService({ButtonServlet.class})
+@Named("ButtonServlet")
 @Path("/settings/buttons")
 public class ButtonServlet {
 
-  private final ButtonsService buttonsService;
-  private final SettingsService settingsService;
-  private final UserCheckService userCheckService;
+  @ComponentImport private final ButtonsService buttonsService;
+  @ComponentImport private final SettingsService settingsService;
+  @ComponentImport private final UserCheckService userCheckService;
 
+  @Inject
   public ButtonServlet(
       ButtonsService buttonsService,
       SettingsService settingsService,
@@ -257,7 +262,8 @@ public class ButtonServlet {
     Integer rId = r != null ? r.getId() : null;
     Long prId = parseLong(pr, -1L);
     final List<PrnfbButton> buttons = buttonsService.getButtons(rId, prId);
-    final Optional<PrnfbButton> button = Iterables.tryFind(buttons, (b) -> b.getUuid().equals(u));
+    final Optional<PrnfbButton> button =
+        buttons.stream().filter(b -> b.getUuid().equals(u)).findAny();
     if (!button.isPresent()) {
       return status(NOT_FOUND).build();
     }
@@ -274,7 +280,7 @@ public class ButtonServlet {
     if (buttonFormDtoList != null) {
       for (final ButtonFormElementDTO buttonFormElementDto : buttonFormDtoList) {
         final String defaultValue = buttonFormElementDto.getDefaultValue();
-        if (!isNullOrEmpty(defaultValue)) {
+        if (defaultValue != null && !defaultValue.isEmpty()) {
           final String defaultValueRendered = renderer.render(defaultValue, ENCODE_FOR.NONE);
           buttonFormElementDto.setDefaultValue(defaultValueRendered);
         }
@@ -283,7 +289,7 @@ public class ButtonServlet {
     }
 
     final String redirectUrl = dto.getRedirectUrl();
-    if (!isNullOrEmpty(redirectUrl)) {
+    if (redirectUrl != null && !redirectUrl.isEmpty()) {
       final String redirectUrlRendered = renderer.render(redirectUrl, ENCODE_FOR.HTML);
       dto.setRedirectUrl(redirectUrlRendered);
     }

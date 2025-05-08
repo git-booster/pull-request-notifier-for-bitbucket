@@ -1,14 +1,12 @@
 package se.bjurr.prnfb.transformer;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Lists.newArrayList;
-import static se.bjurr.prnfb.presentation.dto.ButtonDTO.BUTTON_FORM_LIST_DTO_TYPE;
+import static se.bjurr.prnfb.Util.isNullOrEmpty;
 import static se.bjurr.prnfb.presentation.dto.ButtonFormType.checkbox;
 import static se.bjurr.prnfb.presentation.dto.ButtonFormType.radio;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +22,11 @@ import se.bjurr.prnfb.settings.PrnfbButtonFormElement;
 import se.bjurr.prnfb.settings.PrnfbButtonFormElementOption;
 
 public class ButtonTransformer {
-  private static final Gson gson =
-      new GsonBuilder() //
-          .setPrettyPrinting() //
-          .create();
+  private static ObjectMapper objectMapper = new ObjectMapper();
+
+  static {
+    objectMapper.registerModule(new Jdk8Module());
+  }
 
   public static ButtonDTO toButtonDto(PrnfbButton from) {
     ButtonDTO to = new ButtonDTO();
@@ -35,14 +34,18 @@ public class ButtonTransformer {
     to.setUserLevel(from.getUserLevel());
     to.setUuid(from.getUuid());
     to.setRedirectUrl(from.getRedirectUrl());
-    to.setProjectKey(from.getProjectKey().orNull());
-    to.setRepositorySlug(from.getRepositorySlug().orNull());
+    to.setProjectKey(from.getProjectKey().orElse(null));
+    to.setRepositorySlug(from.getRepositorySlug().orElse(null));
     to.setConfirmation(from.getConfirmation());
     to.setConfirmationText(from.getConfirmationText());
     to.setButtonFormList(toButtonFormDtoList(from.getButtonFormElementList()));
-    String buttonFormDtoListString = gson.toJson(to.getButtonFormList());
-    to.setButtonFormListString(buttonFormDtoListString);
-    return to;
+    try {
+      String buttonFormDtoListString = objectMapper.writeValueAsString(to.getButtonFormList());
+      to.setButtonFormListString(buttonFormDtoListString);
+      return to;
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to serialize buttonFormDtoListString to JSON: " + e, e);
+    }
   }
 
   private static List<ButtonFormElementDTO> toButtonFormDtoList(
@@ -88,7 +91,7 @@ public class ButtonTransformer {
   }
 
   public static List<ButtonDTO> toButtonDtoList(Iterable<PrnfbButton> allowedButtons) {
-    List<ButtonDTO> to = newArrayList();
+    List<ButtonDTO> to = new ArrayList<>();
     for (PrnfbButton from : allowedButtons) {
       to.add(toButtonDto(from));
     }
@@ -99,24 +102,35 @@ public class ButtonTransformer {
     List<ButtonFormElementDTO> buttonFormDto = buttonDto.getButtonFormList();
     if (buttonFormDto == null
         || buttonFormDto.isEmpty() && !isNullOrEmpty(buttonDto.getButtonFormListString())) {
-      buttonFormDto = gson.fromJson(buttonDto.getButtonFormListString(), BUTTON_FORM_LIST_DTO_TYPE);
+
+      ObjectReader objectReader = objectMapper.readerForListOf(ButtonFormElementDTO.class);
+      try {
+
+        if (isNullOrEmpty(buttonDto.getButtonFormListString())) {
+          buttonFormDto = null;
+        } else {
+          buttonFormDto = objectReader.readValue(buttonDto.getButtonFormListString());
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to parse JSON into List<ButtonFormDto>: " + e, e);
+      }
     }
     validateButtonFormDTOList(buttonFormDto);
     List<PrnfbButtonFormElement> buttonFormElement = toPrnfbButtonElementList(buttonFormDto);
-    return new PrnfbButton( //
-        buttonDto.getUUID(), //
-        buttonDto.getName(), //
-        buttonDto.getUserLevel(), //
-        buttonDto.getConfirmation(), //
-        buttonDto.getProjectKey().orNull(), //
-        buttonDto.getRepositorySlug().orNull(), //
-        buttonDto.getConfirmationText(), //
-        buttonDto.getRedirectUrl(), //
-        buttonFormElement); //
+    return new PrnfbButton(
+        buttonDto.getUUID(),
+        buttonDto.getName(),
+        buttonDto.getUserLevel(),
+        buttonDto.getConfirmation(),
+        buttonDto.getProjectKey().orElse(null),
+        buttonDto.getRepositorySlug().orElse(null),
+        buttonDto.getConfirmationText(),
+        buttonDto.getRedirectUrl(),
+        buttonFormElement);
   }
 
-  @VisibleForTesting
-  static void validateButtonFormDTOList(List<ButtonFormElementDTO> buttonFormDtoList) throws Error {
+  public static void validateButtonFormDTOList(List<ButtonFormElementDTO> buttonFormDtoList)
+      throws Error {
     if (buttonFormDtoList == null || buttonFormDtoList.isEmpty()) {
       return;
     }
@@ -175,7 +189,7 @@ public class ButtonTransformer {
 
   public static ButtonPressDTO toTriggerResultDto(
       PrnfbButton button, List<NotificationResponse> results) {
-    List<NotificationResponseDTO> notificationResponses = newArrayList();
+    List<NotificationResponseDTO> notificationResponses = new ArrayList<>();
     for (NotificationResponse from : results) {
       String content = null;
       int status = 0;
