@@ -22,14 +22,14 @@ public class PrnfbButtonFormElement {
       String description,
       String label,
       String name,
-      List<PrnfbButtonFormElementOption> options,
+      List<PrnfbButtonFormElementOption> buttonFormElementOptionList,
       boolean required,
       ButtonFormType type) {
     this.defaultValue = emptyToNull(defaultValue);
     this.description = emptyToNull(description);
     this.label = checkNotNull(label, "label");
     this.name = checkNotNull(name, "name");
-    this.buttonFormElementOptionList = firstNotNull(options, new ArrayList<>());
+    this.buttonFormElementOptionList = firstNotNull(buttonFormElementOptionList, new ArrayList<>());
     this.required = required;
     this.type = checkNotNull(type);
   }
@@ -108,7 +108,7 @@ public class PrnfbButtonFormElement {
     return name;
   }
 
-  public List<PrnfbButtonFormElementOption> getOptions() {
+  public List<PrnfbButtonFormElementOption> getButtonFormElementOptionList() {
     return buttonFormElementOptionList;
   }
 
@@ -136,7 +136,7 @@ public class PrnfbButtonFormElement {
     this.name = s;
   }
 
-  public void setOptions(List<PrnfbButtonFormElementOption> list) {
+  public void setButtonFormElementOptionList(List<PrnfbButtonFormElementOption> list) {
     this.buttonFormElementOptionList = list;
   }
 

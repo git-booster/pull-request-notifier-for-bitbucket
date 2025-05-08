@@ -67,7 +67,7 @@ public class ButtonTransformer {
     to.setName(from.getName());
     to.setRequired(from.getRequired());
     to.setType(from.getType());
-    to.setButtonFormElementOptionList(toDto(from.getOptions()));
+    to.setButtonFormElementOptionList(toDto(from.getButtonFormElementOptionList()));
     return to;
   }
 
