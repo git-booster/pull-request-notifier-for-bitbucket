@@ -1,25 +1,25 @@
 package se.bjurr.prnfb.presentation;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
-import static javax.ws.rs.core.Response.noContent;
-import static javax.ws.rs.core.Response.ok;
-import static javax.ws.rs.core.Response.status;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.noContent;
+import static jakarta.ws.rs.core.Response.ok;
+import static jakarta.ws.rs.core.Response.status;
 import static se.bjurr.prnfb.transformer.SettingsTransformer.toDto;
 import static se.bjurr.prnfb.transformer.SettingsTransformer.toPrnfbSettingsData;
 
 import com.atlassian.annotations.security.XsrfProtectionExcluded;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
 import java.util.Optional;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
 import se.bjurr.prnfb.presentation.dto.SettingsDataDTO;
 import se.bjurr.prnfb.service.SettingsService;
 import se.bjurr.prnfb.service.UserCheckService;

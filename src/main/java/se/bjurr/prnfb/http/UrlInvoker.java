@@ -1,10 +1,10 @@
 package se.bjurr.prnfb.http;
 
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static jakarta.xml.bind.DatatypeConverter.printBase64Binary;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 import static org.apache.http.HttpVersion.HTTP_1_0;
 import static org.apache.http.HttpVersion.HTTP_1_1;
 import static org.slf4j.LoggerFactory.getLogger;

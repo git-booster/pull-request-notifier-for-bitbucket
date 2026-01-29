@@ -1,9 +1,9 @@
 package se.bjurr.prnfb.presentation.dto;
 
-import static javax.xml.bind.annotation.XmlAccessType.FIELD;
+import static jakarta.xml.bind.annotation.XmlAccessType.FIELD;
 
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRootElement;
 import se.bjurr.prnfb.settings.USER_LEVEL;
 
 @XmlRootElement

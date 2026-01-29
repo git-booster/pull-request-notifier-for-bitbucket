@@ -15,8 +15,8 @@ import static se.bjurr.prnfb.test.Podam.populatedInstanceOf;
 import static se.bjurr.prnfb.transformer.NotificationTransformer.toPrnfbNotification;
 
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
-import javax.ws.rs.core.Response;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
