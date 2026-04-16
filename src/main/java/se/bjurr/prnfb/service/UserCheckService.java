@@ -40,7 +40,8 @@ public class UserCheckService {
       SettingsService settingsService,
       RepositoryService repositoryService,
       ProjectService projectService,
-      SecurityService securityService) {
+      SecurityService securityService
+  ) {
     this.userManager = userManager;
     this.settingsService = settingsService;
     this.permissionService = permissionService;
@@ -50,8 +51,7 @@ public class UserCheckService {
   }
 
   public <R extends Restricted> List<R> filterAdminAllowed(List<R> list) {
-    final USER_LEVEL adminRestriction =
-        settingsService.getPrnfbSettingsData().getAdminRestriction();
+    final USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
     return list.stream()
         .filter(r -> isAdminAllowed(r, adminRestriction))
         .collect(Collectors.toList());
@@ -59,15 +59,14 @@ public class UserCheckService {
 
   public Project getProject(String projectKey) {
     try {
-      return securityService //
-          .withPermission(SYS_ADMIN, "Getting project") //
-          .call(
+      return securityService.withPermission(SYS_ADMIN, "Getting project").call(
               new Operation<Project, Exception>() {
                 @Override
                 public Project perform() throws Exception {
                   return projectService.getByKey(projectKey);
                 }
-              });
+              }
+              );
     } catch (final Exception e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -76,15 +75,14 @@ public class UserCheckService {
 
   public Repository getRepo(String projectKey, String repositorySlug) {
     try {
-      return securityService //
-          .withPermission(SYS_ADMIN, "Getting repo") //
-          .call(
+      return securityService.withPermission(SYS_ADMIN, "Getting repo").call(
               new Operation<Repository, Exception>() {
                 @Override
                 public Repository perform() throws Exception {
                   return repositoryService.getBySlug(projectKey, repositorySlug);
                 }
-              });
+              }
+              );
     } catch (final Exception e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -103,10 +101,7 @@ public class UserCheckService {
     if (projectKey != null && repositorySlug == null) {
       final Project project = getProject(projectKey);
       if (project == null) {
-        LOG.error(
-            "Project "
-                + projectKey
-                + " configured. But no such project exists! Allowing anyone to admin.");
+        LOG.error("Project " + projectKey + " configured. But no such project exists! Allowing anyone to admin.");
         return true;
       }
       final boolean isAllowed = permissionService.hasProjectPermission(project, PROJECT_ADMIN);
@@ -119,11 +114,8 @@ public class UserCheckService {
       final Repository repository = getRepo(projectKey, repositorySlug);
       if (repository == null) {
         LOG.error(
-            "Project "
-                + projectKey
-                + " and repo "
-                + repositorySlug
-                + " configured. But no such repo exists! Allowing anyone to admin.");
+            "Project " + projectKey + " and repo " + repositorySlug + " configured. But no such repo exists! Allowing anyone to admin."
+        );
         return true;
       }
       return permissionService.hasRepositoryPermission(repository, REPO_ADMIN);
@@ -138,7 +130,8 @@ public class UserCheckService {
   }
 
   public boolean isAllowed(
-      USER_LEVEL userLevel, @Nullable String projectKey, @Nullable String repositorySlug) {
+      USER_LEVEL userLevel, @Nullable String projectKey, @Nullable String repositorySlug
+  ) {
     final UserKey userKey = userManager.getRemoteUser().getUserKey();
     final boolean isAdmin = isAdmin(userKey, projectKey, repositorySlug);
     final boolean isSystemAdmin = isSystemAdmin(userKey);
@@ -146,9 +139,7 @@ public class UserCheckService {
   }
 
   boolean isAllowed(USER_LEVEL userLevel, boolean isAdmin, boolean isSystemAdmin) {
-    return userLevel == EVERYONE //
-        || isSystemAdmin //
-        || isAdmin && userLevel == ADMIN;
+    return userLevel == EVERYONE || isSystemAdmin || (isAdmin && userLevel == ADMIN);
   }
 
   public boolean isSystemAdmin(UserKey userKey) {
@@ -157,9 +148,6 @@ public class UserCheckService {
 
   public boolean isViewAllowed() {
     final UserProfile user = userManager.getRemoteUser();
-    if (user == null) {
-      return false;
-    }
-    return true;
+      return user != null;
   }
 }

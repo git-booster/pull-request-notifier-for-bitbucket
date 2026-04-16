@@ -5,36 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>se.bjurr.prnfb</groupId>
     <artifactId>pull-request-notifier-for-bitbucket</artifactId>
-    <version>2026.01.29-bb10</version>
+    <version>2026.04.25-bb10</version>
     <organization>
-        <name>bit-booster.com</name>
-        <url>https://bit-booster.com/</url>
+        <name>GitBoost.com</name>
+        <url>https://gitboost.com/</url>
     </organization>
     <name>pull-request-notifier-for-bitbucket</name>
     <description>This is the Pull Request Notifier for Atlassian Bitbucket. See https://github.com/gsylvie/pull-request-notifier-for-bitbucket for documentation and source code. Note: forked from the original github.com/tomasbjerre/ version to add Bitbucket 8.x compatibility as well as Atlassian Data Center certification.</description>
     <packaging>atlassian-plugin</packaging>
-    <distributionManagement>
-        <repository>
-            <id>local-repo</id>
-            <name>LocalDir</name>
-            <url>file://${project.basedir}/dist-maven</url>
-        </repository>
-    </distributionManagement>
-    <repositories>
-        <repository>
-            <id>atlassian-public</id>
-            <url>https://maven.atlassian.com/repository/public</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-        </repository>
-    </repositories>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -58,23 +36,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- PROD // -->
         <dependency>
             <groupId>com.atlassian.templaterenderer</groupId>
             <artifactId>atlassian-template-renderer-api</artifactId>
@@ -107,8 +68,6 @@
             <artifactId>httpclient</artifactId>
             <scope>provided</scope>
         </dependency>
-
-        <!-- TEST // -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
@@ -170,24 +129,8 @@
                 <version>${amps.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <banningExcludes>
-                        <exclude>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</exclude>
-                    </banningExcludes>
-                    <enableFastdev>false</enableFastdev>
-                    <enableDevToolbox>false</enableDevToolbox>
-                    <enablePde>false</enablePde>
-                    <skipRestDocGeneration>true</skipRestDocGeneration>
-                    <skipManifestValidation>true</skipManifestValidation>
-                    <extractDependencies>false</extractDependencies>
-                    <skipManifestValidation>true</skipManifestValidation>
+                    <enableFastdev>true</enableFastdev>
                     <enableQuickReload>true</enableQuickReload>
-                    <pluginArtifacts>
-                        <pluginArtifact>
-                            <groupId>com.atlassian.labs.plugins</groupId>
-                            <artifactId>quickreload</artifactId>
-                            <version>${quick.reload.version}</version>
-                        </pluginArtifact>
-                    </pluginArtifacts>
                     <products>
                         <product>
                             <id>bitbucket</id>
@@ -207,111 +150,19 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.17</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED</argLine>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.coveo</groupId>
-                <artifactId>fmt-maven-plugin</artifactId>
-                <version>${fmt.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.0</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <xmlOutput>true</xmlOutput>
-                    <failOnError>false</failOnError>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>se.bjurr.violations</groupId>
-                <artifactId>violations-maven-plugin</artifactId>
-                <version>${violations.version}</version>
-                <configuration>
-                    <maxViolations>99999999</maxViolations>
-                    <minSeverity>INFO</minSeverity>
-                    <!-- PER_FILE_COMPACT, COMPACT or VERBOSE -->
-                    <detailLevel>VERBOSE</detailLevel>
-                    <violations>
-                        <violation>
-                            <!-- Many more formats available, see: https://github.com/tomasbjerre/violations-lib -->
-                            <parser>FINDBUGS</parser>
-                            <reporter>Findbugs</reporter>
-                            <folder>.</folder>
-                            <pattern>.*/findbugsXml.*\.xml$</pattern>
-                        </violation>
-                    </violations>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>violations</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
     </build>
 
-    <profiles>
-        <profile>
-            <id>integration-test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <includes>
-                                <include>**/*TestIntegration.java</include>
-                            </includes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <properties>
-        <changelog.version>1.54</changelog.version>
-        <fmt.version>2.5.1</fmt.version>
-        <violations.version>1.13</violations.version>
-        <bitbucket.version>10.0.0</bitbucket.version>
+        <bitbucket.version>10.2.2</bitbucket.version>
         <bitbucket.data.version>${bitbucket.version}</bitbucket.data.version>
         <quick.reload.version>2.0.0</quick.reload.version>
         <amps.version>9.9.1</amps.version>

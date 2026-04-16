@@ -5,22 +5,24 @@ import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
-import java.util.Map;
 import se.bjurr.prnfb.http.ClientKeyStore;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
 import se.bjurr.prnfb.settings.PrnfbNotification;
 
+import java.util.Map;
+
 public interface PrnfbVariableResolver {
 
-  String resolve(
-      PullRequest pullRequest,
-      PrnfbPullRequestAction pullRequestAction,
-      ApplicationUser applicationUser,
-      RepositoryService repositoryService,
-      ApplicationPropertiesService propertiesService,
-      PrnfbNotification prnfbNotification,
-      Map<PrnfbVariable, String> variables,
-      ClientKeyStore clientKeyStore,
-      boolean shouldAcceptAnyCertificate,
-      SecurityService securityService);
+    String resolve(
+            PullRequest pullRequest,
+            PrnfbPullRequestAction pullRequestAction,
+            ApplicationUser applicationUser,
+            RepositoryService repositoryService,
+            ApplicationPropertiesService propertiesService,
+            PrnfbNotification prnfbNotification,
+            Map<PrnfbVariable, String> variables,
+            ClientKeyStore clientKeyStore,
+            boolean shouldAcceptAnyCertificate,
+            SecurityService securityService
+    );
 }

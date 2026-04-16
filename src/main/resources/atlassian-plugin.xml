@@ -1,87 +1,122 @@
-<atlassian-plugin key="se.bjurr.prnfs.pull-request-notifier-for-stash" name="${project.name}" plugins-version="2">
- <plugin-info>
-  <description>${project.description}</description>
-  <version>${project.version}</version>
-  <vendor name="${project.organization.name}" url="${project.organization.url}" />
-  <param name="plugin-icon">images/pluginIcon.png</param>
-  <param name="plugin-logo">images/pluginLogo.png</param>
-  <param name="configure.url">/plugins/servlet/prnfb/admin</param>
-
+<atlassian-plugin key="se.bjurr.prnfs.pull-request-notifier-for-stash"
+                  name="${project.name}"
+                  plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}"
+                url="${project.organization.url}" />
+        <param name="plugin-icon">images/pluginIcon.png</param>
+        <param name="plugin-logo">images/pluginLogo.png</param>
+        <param name="configure.url">/plugins/servlet/prnfb/admin</param>
         <param name="plugin-type">both</param>
         <param name="atlassian-data-center-status">compatible</param>
         <param name="atlassian-data-center-compatible">true</param>
- </plugin-info>
-
- <component key="prnfbPullRequestEventListener" class="se.bjurr.prnfb.listener.PrnfbPullRequestEventListener" />
- <component key="buttonsService" class="se.bjurr.prnfb.service.ButtonsService" />
- <component key="userCheckService" class="se.bjurr.prnfb.service.UserCheckService" />
- <component key="settingsService" class="se.bjurr.prnfb.service.SettingsService" />
- <component key="prnfbRendererFactory" class="se.bjurr.prnfb.service.PrnfbRendererFactory" />
- <component key="prNotifierHttpUtil" class="se.bjurr.prnfb.http.HttpUtil" />
-
- <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties" />
- <component-import key="userManager" interface="com.atlassian.sal.api.user.UserManager" />
- <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" />
- <component-import key="renderer" interface="com.atlassian.templaterenderer.velocity.one.six.VelocityTemplateRenderer" />
- <component-import key="pluginSettingsFactory" interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory" />
- <component-import key="transactionTemplate" interface="com.atlassian.sal.api.transaction.TransactionTemplate" />
- <component-import key="repositoryService" interface="com.atlassian.bitbucket.repository.RepositoryService" />
- <component-import key="projectService" interface="com.atlassian.bitbucket.project.ProjectService" />
- <component-import key="executorService" interface="java.util.concurrent.ExecutorService" />
- <component-import key="permissionService" interface="com.atlassian.bitbucket.permission.PermissionService" />
- <component-import key="scmService" interface="com.atlassian.bitbucket.scm.ScmService" />
-
- <rest key="rest" path="/prnfb-admin" version="1.0">
-  <description>Provides REST resources for the admin UI.</description>
- </rest>
-
- <web-resource name="Admin Web Resources" key="resources">
-  <dependency>com.atlassian.auiplugin:ajs</dependency>
-  <resource type="download" name="3rdparty.js" location="3rdparty.js" />
-  <resource type="download" name="utils.js" location="utils.js" />
-  <resource type="download" name="admin.js" location="admin.js" />
-  <resource type="download" name="admin.css" location="admin.css" />
- </web-resource>
-
- <servlet key="admin-servlet" class="se.bjurr.prnfb.presentation.GlobalAdminServlet">
-  <url-pattern>/prnfb/admin*</url-pattern>
- </servlet>
-
-
- <web-item key="se.bjurr.prnfb.repolevel" name="repolevel" section="bitbucket.repository.settings.panel/repository-settings-addons-section">
-  <label key="se.bjurr.prnfb.repolevel">PR-Notifier</label>
-  <link>/plugins/servlet/prnfb/admin/${repository.project.key}/${repository.slug}
-  </link>
- </web-item>
-
- <web-item key="se.bjurr.prnfb.projectlevel" name="projectlevel" section="bitbucket.project.settings.panel/project-settings-addons-section">
-  <label key="se.bjurr.prnfb.projectlevel">PR-Notifier</label>
-  <link>/plugins/servlet/prnfb/admin/${project.key}
-  </link>
- </web-item>
-
- <web-item key="se.bjurr.prnfb.adminlevel" name="adminlevel" section="atl.admin/admin-plugins-section"
-           weight="12">
-  <label key="se.bjurr.prnfb.projectlevel">PR-Notifier</label>
-  <link linkId="pr-notifier-settings-id">/plugins/servlet/prnfb/admin</link>
-  <tooltip key="pr-notifier-settings.tooltip">Configure PR-Notifier global settings</tooltip>
-  <description key="pr-notifier-settings.description">Configure PR-Notifier global settings.</description>
- </web-item>
-
- <client-web-item key="se.bjurr.prnfb.triggerbutton" name="Trigger Notification" weight="50" section="bitbucket.pullrequest.action">
-  <dependency>${project.groupId}-${project.artifactId}:pr-triggerbutton</dependency>
-  <label key="bitbucket.web.pull-request.toolbar.triggerbutton">pr-triggerbutton</label>
- </client-web-item>
-
- <web-resource key="pr-triggerbutton">
-  <resource type="download" name="3rdparty.js" location="3rdparty.js" />
-  <resource type="download" name="utils.js" location="utils.js" />
-  <resource type="download" name="pr-triggerbutton.js" location="/pr-triggerbutton.js" />
-  <resource type="download" name="pr-triggerbutton.css" location="/pr-triggerbutton.css" />
-  <dependency>com.atlassian.bitbucket.bitbucket-web-plugin:global</dependency>
-  <dependency>com.atlassian.auiplugin:ajs</dependency>
-  <context>bitbucket.internal.next.apps.pullRequests</context>
-  <context>bitbucket.page.pullRequest.view</context>
-  <context>bitbucket.page.pullRequest.detail</context>
- </web-resource>
+    </plugin-info>
+    <component class="se.bjurr.prnfb.listener.PrnfbPullRequestEventListener"
+               key="prnfbPullRequestEventListener" />
+    <component class="se.bjurr.prnfb.service.ButtonsService"
+               key="buttonsService" />
+    <component class="se.bjurr.prnfb.service.UserCheckService"
+               key="userCheckService" />
+    <component class="se.bjurr.prnfb.service.SettingsService"
+               key="settingsService" />
+    <component class="se.bjurr.prnfb.service.PrnfbRendererFactory"
+               key="prnfbRendererFactory" />
+    <component class="se.bjurr.prnfb.http.HttpUtil"
+               key="prNotifierHttpUtil" />
+    <component-import interface="com.atlassian.sal.api.ApplicationProperties"
+                      key="applicationProperties" />
+    <component-import interface="com.atlassian.sal.api.user.UserManager"
+                      key="userManager" />
+    <component-import interface="com.atlassian.sal.api.auth.LoginUriProvider"
+                      key="loginUriProvider" />
+    <component-import interface="com.atlassian.templaterenderer.velocity.one.six.VelocityTemplateRenderer"
+                      key="renderer" />
+    <component-import interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory"
+                      key="pluginSettingsFactory" />
+    <component-import interface="com.atlassian.sal.api.transaction.TransactionTemplate"
+                      key="transactionTemplate" />
+    <component-import interface="com.atlassian.bitbucket.repository.RepositoryService"
+                      key="repositoryService" />
+    <component-import interface="com.atlassian.bitbucket.project.ProjectService"
+                      key="projectService" />
+    <component-import interface="java.util.concurrent.ExecutorService"
+                      key="executorService" />
+    <component-import interface="com.atlassian.bitbucket.permission.PermissionService"
+                      key="permissionService" />
+    <component-import interface="com.atlassian.bitbucket.scm.ScmService"
+                      key="scmService" />
+    <rest key="rest"
+          path="/prnfb-admin"
+          version="1.0">
+        <description>Provides REST resources for the admin UI.</description>
+    </rest>
+    <web-resource key="resources"
+                  name="Admin Web Resources">
+        <dependency>com.atlassian.auiplugin:ajs</dependency>
+        <resource location="3rdparty.js"
+                  name="3rdparty.js"
+                  type="download" />
+        <resource location="utils.js"
+                  name="utils.js"
+                  type="download" />
+        <resource location="admin.js"
+                  name="admin.js"
+                  type="download" />
+        <resource location="admin.css"
+                  name="admin.css"
+                  type="download" />
+    </web-resource>
+    <servlet class="se.bjurr.prnfb.presentation.GlobalAdminServlet"
+             key="admin-servlet">
+        <url-pattern>/prnfb/admin*</url-pattern>
+    </servlet>
+    <web-item key="se.bjurr.prnfb.repolevel"
+              name="repolevel"
+              section="bitbucket.repository.settings.panel/repository-settings-addons-section">
+        <label key="se.bjurr.prnfb.repolevel">PR-Notifier</label>
+        <link>/plugins/servlet/prnfb/admin/${repository.project.key}/${repository.slug}</link>
+    </web-item>
+    <web-item key="se.bjurr.prnfb.projectlevel"
+              name="projectlevel"
+              section="bitbucket.project.settings.panel/project-settings-addons-section">
+        <label key="se.bjurr.prnfb.projectlevel">PR-Notifier</label>
+        <link>/plugins/servlet/prnfb/admin/${project.key}</link>
+    </web-item>
+    <web-item key="se.bjurr.prnfb.adminlevel"
+              name="adminlevel"
+              section="atl.admin/admin-plugins-section"
+              weight="12">
+        <label key="se.bjurr.prnfb.projectlevel">PR-Notifier</label>
+        <link linkId="pr-notifier-settings-id">/plugins/servlet/prnfb/admin</link>
+        <tooltip key="pr-notifier-settings.tooltip">Configure PR-Notifier global settings</tooltip>
+        <description key="pr-notifier-settings.description">Configure PR-Notifier global settings.</description>
+    </web-item>
+    <client-web-item key="se.bjurr.prnfb.triggerbutton"
+                     name="Trigger Notification"
+                     section="bitbucket.pullrequest.action"
+                     weight="50">
+        <dependency>${project.groupId}-${project.artifactId}:pr-triggerbutton</dependency>
+        <label key="bitbucket.web.pull-request.toolbar.triggerbutton">pr-triggerbutton</label>
+    </client-web-item>
+    <web-resource key="pr-triggerbutton">
+        <resource location="3rdparty.js"
+                  name="3rdparty.js"
+                  type="download" />
+        <resource location="utils.js"
+                  name="utils.js"
+                  type="download" />
+        <resource location="/pr-triggerbutton.js"
+                  name="pr-triggerbutton.js"
+                  type="download" />
+        <resource location="/pr-triggerbutton.css"
+                  name="pr-triggerbutton.css"
+                  type="download" />
+        <dependency>com.atlassian.bitbucket.bitbucket-web-plugin:global</dependency>
+        <dependency>com.atlassian.auiplugin:ajs</dependency>
+        <context>bitbucket.internal.next.apps.pullRequests</context>
+        <context>bitbucket.page.pullRequest.view</context>
+        <context>bitbucket.page.pullRequest.detail</context>
+    </web-resource>
 </atlassian-plugin>

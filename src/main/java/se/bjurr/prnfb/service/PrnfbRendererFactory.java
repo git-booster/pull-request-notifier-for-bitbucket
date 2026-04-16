@@ -12,60 +12,56 @@ import se.bjurr.prnfb.settings.PrnfbNotification;
 
 public class PrnfbRendererFactory {
 
-  private final AuthenticationContext authenticationContext;
-  private final ApplicationPropertiesService propertiesService;
-  private final RepositoryService repositoryService;
-  private final SecurityService securityService;
+    private final AuthenticationContext authenticationContext;
+    private final ApplicationPropertiesService propertiesService;
+    private final RepositoryService repositoryService;
+    private final SecurityService securityService;
 
-  public PrnfbRendererFactory(
-      RepositoryService repositoryService,
-      ApplicationPropertiesService propertiesService,
-      AuthenticationContext authenticationContext,
-      SecurityService securityService) {
-    this.repositoryService = repositoryService;
-    this.propertiesService = propertiesService;
-    this.authenticationContext = authenticationContext;
-    this.securityService = securityService;
-  }
+    public PrnfbRendererFactory(
+            RepositoryService repositoryService, ApplicationPropertiesService propertiesService,
+            AuthenticationContext authenticationContext, SecurityService securityService
+    ) {
+        this.repositoryService = repositoryService;
+        this.propertiesService = propertiesService;
+        this.authenticationContext = authenticationContext;
+        this.securityService = securityService;
+    }
 
-  public PrnfbRendererWrapper create(
-      PullRequest pullRequest,
-      PrnfbPullRequestAction pullRequestAction,
-      VariablesContext variables,
-      ClientKeyStore clientKeyStore,
-      boolean shouldAcceptAnyCertificate) {
-    PrnfbNotification prnfbNotification = null;
-    PrnfbRenderer renderer = create(pullRequest, pullRequestAction, prnfbNotification, variables);
-    return new PrnfbRendererWrapper(renderer, clientKeyStore, shouldAcceptAnyCertificate);
-  }
+    public PrnfbRendererWrapper create(
+            PullRequest pullRequest, PrnfbPullRequestAction pullRequestAction,
+            VariablesContext variables, ClientKeyStore clientKeyStore, boolean shouldAcceptAnyCertificate
+    ) {
+        PrnfbNotification prnfbNotification = null;
+        PrnfbRenderer renderer = create(pullRequest, pullRequestAction, prnfbNotification, variables);
+        return new PrnfbRendererWrapper(renderer, clientKeyStore, shouldAcceptAnyCertificate);
+    }
 
-  public PrnfbRenderer create(
-      PullRequest pullRequest,
-      PrnfbPullRequestAction pullRequestAction,
-      PrnfbNotification prnfbNotification,
-      VariablesContext variables) {
-    return create(
-        pullRequest,
-        pullRequestAction,
-        prnfbNotification,
-        variables,
-        this.authenticationContext.getCurrentUser());
-  }
+    public PrnfbRenderer create(
+            PullRequest pullRequest, PrnfbPullRequestAction pullRequestAction,
+            PrnfbNotification prnfbNotification, VariablesContext variables
+    ) {
+        return create(
+                pullRequest,
+                pullRequestAction,
+                prnfbNotification,
+                variables,
+                this.authenticationContext.getCurrentUser()
+        );
+    }
 
-  public PrnfbRenderer create(
-      PullRequest pullRequest,
-      PrnfbPullRequestAction pullRequestAction,
-      PrnfbNotification prnfbNotification,
-      VariablesContext variables,
-      ApplicationUser currentUser) {
-    return new PrnfbRenderer(
-        pullRequest,
-        pullRequestAction,
-        currentUser,
-        this.repositoryService,
-        this.propertiesService,
-        prnfbNotification,
-        variables.getVariables(),
-        this.securityService);
-  }
+    public PrnfbRenderer create(
+            PullRequest pullRequest, PrnfbPullRequestAction pullRequestAction,
+            PrnfbNotification prnfbNotification, VariablesContext variables, ApplicationUser currentUser
+    ) {
+        return new PrnfbRenderer(
+                pullRequest,
+                pullRequestAction,
+                currentUser,
+                this.repositoryService,
+                this.propertiesService,
+                prnfbNotification,
+                variables.getVariables(),
+                this.securityService
+        );
+    }
 }

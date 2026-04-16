@@ -10,18 +10,19 @@ import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
  */
 public class PrnfbRendererWrapper {
 
-  private final ClientKeyStore clientKeyStore;
-  private final PrnfbRenderer renderer;
-  private final Boolean shouldAcceptAnyCertificate;
+    private final ClientKeyStore clientKeyStore;
+    private final PrnfbRenderer renderer;
+    private final Boolean shouldAcceptAnyCertificate;
 
-  public PrnfbRendererWrapper(
-      PrnfbRenderer renderer, ClientKeyStore clientKeyStore, Boolean shouldAcceptAnyCertificate) {
-    this.renderer = renderer;
-    this.clientKeyStore = clientKeyStore;
-    this.shouldAcceptAnyCertificate = shouldAcceptAnyCertificate;
-  }
+    public PrnfbRendererWrapper(
+            PrnfbRenderer renderer, ClientKeyStore clientKeyStore, Boolean shouldAcceptAnyCertificate
+    ) {
+        this.renderer = renderer;
+        this.clientKeyStore = clientKeyStore;
+        this.shouldAcceptAnyCertificate = shouldAcceptAnyCertificate;
+    }
 
-  public String render(String inputString, ENCODE_FOR encodeFor) {
-    return renderer.render(inputString, encodeFor, clientKeyStore, shouldAcceptAnyCertificate);
-  }
+    public String render(String inputString, ENCODE_FOR encodeFor) {
+        return renderer.render(inputString, encodeFor, clientKeyStore, shouldAcceptAnyCertificate);
+    }
 }
