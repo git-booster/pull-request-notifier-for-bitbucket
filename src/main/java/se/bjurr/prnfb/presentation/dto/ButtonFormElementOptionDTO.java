@@ -1,13 +1,13 @@
 package se.bjurr.prnfb.presentation.dto;
 
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 import se.bjurr.prnfb.Java2Json;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static jakarta.xml.bind.annotation.XmlAccessType.FIELD;
+import static javax.xml.bind.annotation.XmlAccessType.FIELD;
 
 /**
  * @see ButtonFormElementDTO

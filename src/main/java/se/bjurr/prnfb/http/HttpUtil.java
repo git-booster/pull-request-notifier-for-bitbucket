@@ -4,7 +4,7 @@ import com.atlassian.event.api.EventListener;
 import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.sal.api.lifecycle.LifecycleAware;
-import jakarta.inject.Named;
+import javax.inject.Named;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;

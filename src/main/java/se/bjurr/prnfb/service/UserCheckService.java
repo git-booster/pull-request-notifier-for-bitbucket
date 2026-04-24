@@ -18,7 +18,7 @@ import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.sal.api.user.UserKey;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
-import jakarta.annotation.Nullable;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

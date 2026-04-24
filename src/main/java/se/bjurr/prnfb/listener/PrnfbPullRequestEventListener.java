@@ -19,7 +19,7 @@ import com.atlassian.bitbucket.pull.PullRequestService;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.event.api.EventListener;
-import jakarta.inject.Named;
+import javax.inject.Named;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import se.bjurr.prnfb.http.ClientKeyStore;

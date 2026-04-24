@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>se.bjurr.prnfb</groupId>
     <artifactId>pull-request-notifier-for-bitbucket</artifactId>
-    <version>2026.05.07-bb10</version>
+    <version>2026.05.07</version>
     <organization>
         <name>GitBoost.com</name>
         <url>https://gitboost.com/</url>
@@ -162,7 +162,7 @@
     </build>
 
     <properties>
-        <bitbucket.version>10.2.2</bitbucket.version>
+        <bitbucket.version>7.18.0</bitbucket.version>
         <bitbucket.data.version>${bitbucket.version}</bitbucket.data.version>
         <quick.reload.version>2.0.0</quick.reload.version>
         <amps.version>9.9.1</amps.version>

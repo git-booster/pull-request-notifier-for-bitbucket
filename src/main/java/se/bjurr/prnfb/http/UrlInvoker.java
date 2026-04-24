@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static jakarta.xml.bind.DatatypeConverter.printBase64Binary;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
