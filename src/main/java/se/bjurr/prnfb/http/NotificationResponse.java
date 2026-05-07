@@ -7,11 +7,15 @@ public class NotificationResponse {
     private final UUID notification;
     private final String notificationName;
 
+    private final String error;
+
     public NotificationResponse(
-            UUID notification, String notificationName, HttpResponse httpResponse) {
+            UUID notification, String notificationName, HttpResponse httpResponse, String error
+    ) {
         this.notification = notification;
         this.notificationName = notificationName;
         this.httpResponse = httpResponse;
+        this.error = error;
     }
 
     @Override
@@ -48,6 +52,10 @@ public class NotificationResponse {
             return false;
         }
         return true;
+    }
+
+    public String getError() {
+        return error;
     }
 
     public HttpResponse getHttpResponse() {

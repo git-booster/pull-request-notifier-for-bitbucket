@@ -218,7 +218,7 @@ public class PrnfbPullRequestEventListener {
                     notification.getPostContent().get(), encodePostContentFor, clientKeyStore, acceptAny
             ));
         }
-        String renderedUrl = renderer.render(
+        final String renderedUrl = renderer.render(
                 notification.getUrl(), ENCODE_FOR.URL, clientKeyStore, acceptAny
         );
         LOG.info(
@@ -238,16 +238,31 @@ public class PrnfbPullRequestEventListener {
                     header.getValue(), ENCODE_FOR.NONE, clientKeyStore, acceptAny
             ));
         }
-        final HttpResponse httpResponse = urlInvoker
-                .withProxyServer(notification.getProxyServer())
-                .withProxyPort(notification.getProxyPort())
-                .withProxySchema(notification.getProxySchema())
-                .withProxyUser(notification.getProxyUser())
-                .withProxyPassword(notification.getProxyPassword())
-                .shouldAcceptAnyCertificate(acceptAny)
-                .setHttpVersion(notification.getHttpVersion()
-                ).invoke();
-        return new NotificationResponse(notification.getUuid(), notification.getName(), httpResponse);
+
+        String method = notification.getMethod().toString();
+        String err = null;
+        HttpResponse httpResponse = null;
+        try {
+            httpResponse = urlInvoker
+                    .withProxyServer(notification.getProxyServer())
+                    .withProxyPort(notification.getProxyPort())
+                    .withProxySchema(notification.getProxySchema())
+                    .withProxyUser(notification.getProxyUser())
+                    .withProxyPassword(notification.getProxyPassword())
+                    .shouldAcceptAnyCertificate(acceptAny)
+                    .setHttpVersion(notification.getHttpVersion()
+                    ).invoke();
+        } catch (Exception e) {
+            Throwable t = e.getCause();
+            if (t == null) {
+                t = e;
+            }
+            err = method + " to [" + renderedUrl + "] failed. " + t.getMessage() + " (" + t.getClass() + ")";
+        }
+
+        return new NotificationResponse(
+                notification.getUuid(), notification.getName(), httpResponse, err
+        );
     }
 
     @EventListener

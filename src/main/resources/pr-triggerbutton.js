@@ -219,20 +219,29 @@ window.addEventListener("load", function load(event) {
             if (response) {
                 for (var i = 0; i < response.length; i++) {
                     var notificationResponse = response[i];
-                    if (notificationResponse.status >= 200 && notificationResponse.status <= 299) {
+                    var errMsg = '';
+                    var hasError = notificationResponse.status < 200 || notificationResponse.status > 299;
+                    if (hasError) {
+                        errMsg = '<p><b>Error:</b> ' + notificationResponse.error + '</p>';
+                        if (!notificationResponse.error) {
+                            errMsg = '<p><b>Error:</b> [' + notificationResponse.uri + '] returned HTTP code ' + notificationResponse.status + '</p>' +
+                                '<p>You may check network tab in web browser for exact URL and response.</p>';
+                        }
+                    }
+
+                    if (!hasError) {
                         AJS.flag({
                             close: 'auto',
                             type: 'success',
                             title: notificationResponse.notificationName.replace(/<script>/g, 'script'),
-                            body: '<p>You may check network tab in web browser for exact URL and response.</p>'
+                            body: '<p><b>Success!</b> You may check network tab in web browser for exact URL and response.</p>'
                         });
                     } else {
                         AJS.flag({
-                            close: 'auto',
+                            close: 'manual',
                             type: 'error',
                             title: notificationResponse.notificationName.replace(/<script>/g, 'script'),
-                            body: '<p>' + notificationResponse.status + ' ' + notificationResponse.uri + '</p>' +
-                                '<p>You may check network tab in web browser for exact URL and response.</p>'
+                            body: errMsg
                         });
                     }
                 }
@@ -369,6 +378,7 @@ window.addEventListener("load", function load(event) {
                 }
             });
         }
+
         var target = document.querySelector('.pull-request-header');
         var prStateChangedConfig = {characterData: true, attributes: false, childList: true, subtree: true};
         var observer = new MutationObserver(mutate);

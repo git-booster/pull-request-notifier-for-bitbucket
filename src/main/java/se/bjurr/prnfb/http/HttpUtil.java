@@ -154,7 +154,8 @@ public class HttpUtil implements LifecycleAware {
             forLog[8] = e.toString();
 
             put(LAST_25_ERRORS, start, forLog);
-            LOG.error("PR-Notifier-HTTP-Failure - " + e, e);
+            LOG.error("PR-Notifier-HTTP-Failure - " + e);
+            throw new RuntimeException(e);
 
         } finally {
             try {
@@ -165,7 +166,6 @@ public class HttpUtil implements LifecycleAware {
                 throw new RuntimeException(e);
             }
         }
-        return null;
     }
 
     private static void put(final TreeMap<Long, String[]> m, Long l, String[] v) {

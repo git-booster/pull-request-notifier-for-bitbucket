@@ -17,14 +17,17 @@ public class NotificationResponseDTO implements Comparable<NotificationResponseD
     private final int status;
     private final URI uri;
 
+    private final String error;
+
     public NotificationResponseDTO(
-            URI uri, String content, int status, UUID notification, String notificationName
+            URI uri, String content, int status, UUID notification, String notificationName, String error
     ) {
         this.content = content;
         this.status = status;
         this.notification = notification;
         this.notificationName = notificationName;
         this.uri = uri;
+        this.error = error;
     }
 
     @Override
@@ -77,6 +80,8 @@ public class NotificationResponseDTO implements Comparable<NotificationResponseD
         }
         return true;
     }
+
+    public String getError() { return this.error; }
 
     public URI getUri() {
         return this.uri;

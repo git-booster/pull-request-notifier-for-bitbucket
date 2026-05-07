@@ -180,9 +180,10 @@ public class ButtonTransformer {
                 status = from.getHttpResponse().getStatus();
                 uri = from.getHttpResponse().getUri();
             }
+            String error = from.getError();
             UUID notification = from.getNotification();
             String notificationName = from.getNotificationName();
-            responses.add(new NotificationResponseDTO(uri, content, status, notification, notificationName));
+            responses.add(new NotificationResponseDTO(uri, content, status, notification, notificationName, error));
         }
         return new ButtonPressDTO(button.getConfirmation(), responses);
     }
