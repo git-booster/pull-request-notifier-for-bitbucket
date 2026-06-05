@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,5 +96,18 @@ public class Util {
 
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.isEmpty();
+    }
+
+    public static UUID toUuid(Object o) {
+        String s = o != null ? String.valueOf(o).trim() : null;
+        if (s == null || "".equals(s)) {
+            return null;
+        } else {
+            try {
+                return UUID.fromString(s.toLowerCase(Locale.ROOT));
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
     }
 }

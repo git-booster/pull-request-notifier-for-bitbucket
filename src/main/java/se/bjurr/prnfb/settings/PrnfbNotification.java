@@ -2,6 +2,7 @@ package se.bjurr.prnfb.settings;
 
 import com.atlassian.bitbucket.pull.PullRequestState;
 import se.bjurr.prnfb.Java2Json;
+import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
 import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
@@ -96,33 +97,39 @@ public class PrnfbNotification implements HasUuid, Restricted, Java2Json._2JS {
         if (m != null) {
             List<Map<String, Object>> list = (List) m.get("headers");
             List<PrnfbHeader> headers = new ArrayList<>();
-            for (Map<String, Object> mm : list) {
-                PrnfbHeader h = PrnfbHeader._fjs(mm);
-                if (h != null) {
-                    headers.add(h);
+            if (list != null) {
+                for (Map<String, Object> mm : list) {
+                    PrnfbHeader h = PrnfbHeader._fjs(mm);
+                    if (h != null) {
+                        headers.add(h);
+                    }
                 }
             }
 
             List<PullRequestState> states = new ArrayList<>();
             List<String> strings = (List) m.get("triggerIgnoreStateList");
-            for (String s : strings) {
-                s = s != null ? s.trim().toUpperCase(Locale.ROOT) : null;
-                if (s != null) {
-                    try {
-                        PullRequestState prs = PullRequestState.valueOf(s);
-                        states.add(prs);
-                    } catch (RuntimeException re) {
-                        // ignore... oh well
+            if (strings != null) {
+                for (String s : strings) {
+                    s = s != null ? s.trim().toUpperCase(Locale.ROOT) : null;
+                    if (s != null) {
+                        try {
+                            PullRequestState prs = PullRequestState.valueOf(s);
+                            states.add(prs);
+                        } catch (RuntimeException re) {
+                            // ignore... oh well
+                        }
                     }
                 }
             }
 
             List<PrnfbPullRequestAction> triggers = new ArrayList<>();
             strings = (List) m.get("triggers");
-            for (String s : strings) {
-                PrnfbPullRequestAction action = PrnfbPullRequestAction.fromObject(s);
-                if (action != null) {
-                    triggers.add(action);
+            if (strings != null) {
+                for (String s : strings) {
+                    PrnfbPullRequestAction action = PrnfbPullRequestAction.fromObject(s);
+                    if (action != null) {
+                        triggers.add(action);
+                    }
                 }
             }
 
@@ -155,16 +162,9 @@ public class PrnfbNotification implements HasUuid, Restricted, Java2Json._2JS {
 
             Boolean b = (Boolean) m.get("updatePullRequestRefs");
             n.updatePullRequestRefs = b != null ? b : false;
-
             n.url = (String) m.get("url");
             n.user = (String) m.get("user");
-
-            String u = (String) m.get("uuid");
-            if (u != null) {
-                u = u.trim();
-                n.uuid = UUID.fromString(u);
-            }
-
+            n.uuid = Util.toUuid(m.get("uuid"));
             n.postContentEncoding = ENCODE_FOR.fromObject(m.get("postContentEncoding"));
             n.proxySchema = (String) m.get("proxySchema");
             n.httpVersion = (String) m.get("httpVersion");

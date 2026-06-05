@@ -37,10 +37,12 @@ public class PrnfbButtonFormElement implements Java2Json._2JS {
         if (m != null) {
             List<Map<String, Object>> list = (List) m.get("buttonFormElementOptionList");
             List<PrnfbButtonFormElementOption> options = new ArrayList<>();
-            for (Map<String, Object> mm : list) {
-                PrnfbButtonFormElementOption option = PrnfbButtonFormElementOption._fjs(mm);
-                if (option != null) {
-                    options.add(option);
+            if (list != null) {
+                for (Map<String, Object> mm : list) {
+                    PrnfbButtonFormElementOption option = PrnfbButtonFormElementOption._fjs(mm);
+                    if (option != null) {
+                        options.add(option);
+                    }
                 }
             }
             String defaultValue = (String) m.get("defaultValue");
@@ -52,7 +54,8 @@ public class PrnfbButtonFormElement implements Java2Json._2JS {
             if (name != null) {
                 name = name.trim();
                 return new PrnfbButtonFormElement(
-                        defaultValue, description, label, name, options, required, type);
+                        defaultValue, description, label, name, options, required, type
+                );
             }
         }
         return null;

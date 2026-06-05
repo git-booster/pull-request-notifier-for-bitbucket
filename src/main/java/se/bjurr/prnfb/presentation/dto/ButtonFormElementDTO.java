@@ -39,10 +39,12 @@ public class ButtonFormElementDTO implements Java2Json._2JS {
         Boolean b = (Boolean) m.get("required");
         List<Map<String, Object>> list = (List) m.get("buttonFormElementOptionList");
         List<ButtonFormElementOptionDTO> options = new ArrayList<>();
-        for (Map<String, Object> mm : list) {
-            ButtonFormElementOptionDTO option = ButtonFormElementOptionDTO._fjs(mm);
-            if (option != null) {
-                options.add(option);
+        if (list != null) {
+            for (Map<String, Object> mm : list) {
+                ButtonFormElementOptionDTO option = ButtonFormElementOptionDTO._fjs(mm);
+                if (option != null) {
+                    options.add(option);
+                }
             }
         }
         dto.defaultValue = (String) m.get("defaultValue");

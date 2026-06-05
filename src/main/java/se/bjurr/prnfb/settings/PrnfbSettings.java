@@ -19,6 +19,12 @@ public class PrnfbSettings implements Java2Json._2JS {
     public PrnfbSettings() {
     }
 
+    public PrnfbSettings(PrnfbSettingsBuilder builder) {
+        this.notifications = checkNotNull(builder.getNotifications());
+        this.buttons = checkNotNull(builder.getButtons());
+        this.prnfbSettingsData = checkNotNull(builder.getPrnfbSettingsData(), "prnfbSettingsData");
+    }
+
     public Map<String, Object> _2js() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("buttons", Java2Json._2List((List) this.buttons));
@@ -32,19 +38,23 @@ public class PrnfbSettings implements Java2Json._2JS {
 
         List<Map<String, Object>> list = (List) m.get("buttons");
         List<PrnfbButton> buttons = new ArrayList<>();
-        for (Map<String, Object> mm : list) {
-            PrnfbButton b = PrnfbButton._fjs(mm);
-            if (b != null) {
-                buttons.add(b);
+        if (list != null) {
+            for (Map<String, Object> mm : list) {
+                PrnfbButton b = PrnfbButton._fjs(mm);
+                if (b != null) {
+                    buttons.add(b);
+                }
             }
         }
 
         list = (List) m.get("notifications");
         List<PrnfbNotification> notifications = new ArrayList<>();
-        for (Map<String, Object> mm : list) {
-            PrnfbNotification n = PrnfbNotification._fjs(mm);
-            if (n != null) {
-                notifications.add(n);
+        if (list != null) {
+            for (Map<String, Object> mm : list) {
+                PrnfbNotification n = PrnfbNotification._fjs(mm);
+                if (n != null) {
+                    notifications.add(n);
+                }
             }
         }
 
@@ -54,12 +64,6 @@ public class PrnfbSettings implements Java2Json._2JS {
         p.notifications = notifications;
         p.prnfbSettingsData = data;
         return p;
-    }
-
-    public PrnfbSettings(PrnfbSettingsBuilder builder) {
-        this.notifications = checkNotNull(builder.getNotifications());
-        this.buttons = checkNotNull(builder.getButtons());
-        this.prnfbSettingsData = checkNotNull(builder.getPrnfbSettingsData(), "prnfbSettingsData");
     }
 
     @Override

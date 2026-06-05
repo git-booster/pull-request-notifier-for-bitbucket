@@ -5,6 +5,19 @@ import com.atlassian.bitbucket.project.Project;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import se.bjurr.prnfb.Util;
+import se.bjurr.prnfb.http.NotificationResponse;
+import se.bjurr.prnfb.presentation.dto.ButtonDTO;
+import se.bjurr.prnfb.presentation.dto.ButtonFormElementDTO;
+import se.bjurr.prnfb.presentation.dto.ButtonPressDTO;
+import se.bjurr.prnfb.service.ButtonsService;
+import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
+import se.bjurr.prnfb.service.PrnfbRendererWrapper;
+import se.bjurr.prnfb.service.SettingsService;
+import se.bjurr.prnfb.service.UserCheckService;
+import se.bjurr.prnfb.settings.PrnfbButton;
+import se.bjurr.prnfb.settings.USER_LEVEL;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
@@ -19,18 +32,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import se.bjurr.prnfb.http.NotificationResponse;
-import se.bjurr.prnfb.presentation.dto.ButtonDTO;
-import se.bjurr.prnfb.presentation.dto.ButtonFormElementDTO;
-import se.bjurr.prnfb.presentation.dto.ButtonPressDTO;
-import se.bjurr.prnfb.service.ButtonsService;
-import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
-import se.bjurr.prnfb.service.PrnfbRendererWrapper;
-import se.bjurr.prnfb.service.SettingsService;
-import se.bjurr.prnfb.service.UserCheckService;
-import se.bjurr.prnfb.settings.PrnfbButton;
-import se.bjurr.prnfb.settings.USER_LEVEL;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -164,13 +165,12 @@ public class ButtonServlet {
         String uuid = null;
         if (project == null && repo == null && pr == null) {
             parsed = parsePath(path, "buttons");
-            if (parsed[2] != null
-                    && parsed[2].trim().length() == "53076b81-aeec-4159-a81f-8d2ad2ecb4be".length()) {
+            if (parsed[2] != null && parsed[2].trim().length() == "53076b81-aeec-4159-a81f-8d2ad2ecb4be".length()) {
                 uuid = parsed[2];
             }
         }
-        if (uuid != null) {
-            UUID u = UUID.fromString(uuid);
+        UUID u = Util.toUuid(uuid);
+        if (u != null) {
             return getUuidButtons(u);
         }
 
@@ -251,9 +251,9 @@ public class ButtonServlet {
         String repo = parsed[1];
         String pr = parsed[2];
 
-        String[] parsed2 = parsed = parsePath(path, "uuid");
+        String[] parsed2 = parsePath(path, "uuid");
         String uuid = parsed2[2];
-        final UUID u = uuid != null ? UUID.fromString(uuid) : null;
+        final UUID u = Util.toUuid(uuid);
 
         Repository r = userCheckService.getRepo(project, repo);
         Integer rId = r != null ? r.getId() : null;

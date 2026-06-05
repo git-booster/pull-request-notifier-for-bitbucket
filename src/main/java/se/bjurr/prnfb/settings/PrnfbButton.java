@@ -1,6 +1,7 @@
 package se.bjurr.prnfb.settings;
 
 import se.bjurr.prnfb.Java2Json;
+import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.presentation.dto.ON_OR_OFF;
 
 import java.util.ArrayList;
@@ -41,14 +42,16 @@ public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._
         return m;
     }
 
-    public static PrnfbButton _fjs(Map<String, Object> m) {
+    public static PrnfbButton _fjs(final Map<String, Object> m) {
         if (m != null) {
             List<Map<String, Object>> list = (List) m.get("buttonFormElementList");
             List<PrnfbButtonFormElement> elements = new ArrayList<>();
-            for (Map<String, Object> mm : list) {
-                PrnfbButtonFormElement element = PrnfbButtonFormElement._fjs(mm);
-                if (element != null) {
-                    elements.add(element);
+            if (list != null) {
+                for (Map<String, Object> mm : list) {
+                    PrnfbButtonFormElement element = PrnfbButtonFormElement._fjs(mm);
+                    if (element != null) {
+                        elements.add(element);
+                    }
                 }
             }
 
@@ -57,10 +60,7 @@ public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._
             String projectKey = (String) m.get("projectKey");
             String repositorySlug = (String) m.get("repositorySlug");
             USER_LEVEL userLevel = USER_LEVEL.fromObject(m.get("userLevel"));
-            UUID uuid = null;
-            if (m.get("uuid") != null) {
-                uuid = UUID.fromString((String) m.get("uuid"));
-            }
+            UUID uuid = Util.toUuid(m.get("uuid"));
             String confirmationText = (String) m.get("confirmationText");
             String redirectUrl = (String) m.get("redirectUrl");
             return new PrnfbButton(
@@ -86,7 +86,8 @@ public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._
             String repositorySlug,
             String confirmationText,
             String redirectUrl,
-            List<PrnfbButtonFormElement> buttonFormElementList) {
+            List<PrnfbButtonFormElement> buttonFormElementList
+    ) {
         this.uuid = firstNotNull(uuid, randomUUID());
         this.name = name;
         this.userLevel = userLevel;
