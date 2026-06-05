@@ -10,19 +10,20 @@ import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import se.bjurr.prnfb.Util;
+import se.bjurr.prnfb.http.HttpUtil;
+import se.bjurr.prnfb.service.UserCheckService;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import se.bjurr.prnfb.Util;
-import se.bjurr.prnfb.http.HttpUtil;
-import se.bjurr.prnfb.service.UserCheckService;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static java.util.Optional.empty;
 import static se.bjurr.prnfb.Util.immutableMap;
@@ -104,10 +105,13 @@ public class GlobalAdminServlet extends HttpServlet {
                 } else {
                     context.put("refreshResult", "");
                 }
-                context.put("successes", HttpUtil.LAST_25_SUCCESSES.values());
-                context.put("failures", HttpUtil.LAST_25_FAILURES.values());
-                context.put("errors", HttpUtil.LAST_25_ERRORS.values());
-                context.put("in_flight", HttpUtil.LAST_25_IN_FLIGHT.values());
+
+                // pop them into TreeMaps so that they are sorted by timestamp.
+                context.put("successes", new TreeMap<>(HttpUtil.LAST_25_SUCCESSES).values());
+                context.put("failures", new TreeMap<>(HttpUtil.LAST_25_FAILURES).values());
+                context.put("errors", new TreeMap<>(HttpUtil.LAST_25_ERRORS).values());
+                context.put("in_flight", new TreeMap<>(HttpUtil.LAST_25_IN_FLIGHT).values());
+
                 response.setContentType("text/html;charset=UTF-8");
                 this.renderer.render("debug.vm", context, response.getWriter());
                 return;

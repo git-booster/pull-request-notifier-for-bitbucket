@@ -4,7 +4,6 @@ import com.atlassian.event.api.EventListener;
 import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.sal.api.lifecycle.LifecycleAware;
-import javax.inject.Named;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -16,6 +15,7 @@ import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -30,6 +30,7 @@ import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 
+import javax.inject.Named;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +40,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -53,10 +55,10 @@ public class HttpUtil implements LifecycleAware {
     public HttpUtil() {
     }
 
-    public static final TreeMap<Long, String[]> LAST_25_SUCCESSES = new TreeMap<>();
-    public static final TreeMap<Long, String[]> LAST_25_FAILURES = new TreeMap<>();
-    public static final TreeMap<Long, String[]> LAST_25_ERRORS = new TreeMap<>();
-    public static final TreeMap<Long, String[]> LAST_25_IN_FLIGHT = new TreeMap<>();
+    public static final ConcurrentHashMap<Long, String[]> LAST_25_SUCCESSES = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Long, String[]> LAST_25_FAILURES = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Long, String[]> LAST_25_ERRORS = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Long, String[]> LAST_25_IN_FLIGHT = new ConcurrentHashMap<>();
 
     public static void reset() {
         if (main != null) {
@@ -77,6 +79,10 @@ public class HttpUtil implements LifecycleAware {
             }
         }
         proxies.clear();
+        LAST_25_SUCCESSES.clear();
+        LAST_25_FAILURES.clear();
+        LAST_25_ERRORS.clear();
+        LAST_25_IN_FLIGHT.clear();
     }
 
     private static CloseableHttpClient getCachedClient(final UrlInvoker u, final HttpHost h) {
@@ -85,7 +91,7 @@ public class HttpUtil implements LifecycleAware {
             // proxy=true
             client = proxies.get(h);
             if (client == null) {
-                HttpClientBuilder builder = HttpClientBuilder.create();
+                HttpClientBuilder builder = initHttpBuilder();
                 configureSsl(u, builder, true);
                 configureForProxy(u, h, builder);
                 client = builder.build();
@@ -95,13 +101,24 @@ public class HttpUtil implements LifecycleAware {
             // proxy=false
             client = main;
             if (client == null) {
-                HttpClientBuilder builder = HttpClientBuilder.create();
+                HttpClientBuilder builder = initHttpBuilder();
                 configureSsl(u, builder, false);
                 client = builder.build();
                 main = client;
             }
         }
         return client;
+    }
+
+    private static HttpClientBuilder initHttpBuilder() {
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        builder.setConnectionManagerShared(true);
+        SocketConfig socketConfig = SocketConfig.custom().setTcpNoDelay(true).setSoTimeout(50000).build();
+        builder.setDefaultSocketConfig(socketConfig);
+        builder.setMaxConnTotal(900);
+        builder.setMaxConnPerRoute(900);
+        builder.setConnectionTimeToLive(60, TimeUnit.SECONDS);
+        return builder;
     }
 
     public static HttpResponse doInvoke(final UrlInvoker u, final HttpRequestBase httpRequestBase) {
@@ -168,18 +185,29 @@ public class HttpUtil implements LifecycleAware {
         }
     }
 
-    private static void put(final TreeMap<Long, String[]> m, Long l, String[] v) {
-        synchronized (m) {
-            while (m.size() > 24) {
-                m.pollFirstEntry();
+    private static void put(final Map<Long, String[]> m, final Long l, final String[] v) {
+
+        // Make sure Map not too big...
+        TreeMap<Long, String[]> tm = new TreeMap<>(m);
+        long toDelete = tm.size() - 24;
+        if (toDelete > 0) {
+            for (Long k : tm.keySet()) {
+                m.remove(k);
+                toDelete--;
+                if (toDelete <= 0) {
+                    break;
+                }
             }
-            m.put(l, v);
         }
+
+        // Actually put in our guy...
+        m.put(l, v);
+
+        // Remove from "IN_FLIGHT" map if appropriate.
         if (m != LAST_25_IN_FLIGHT) {
-            synchronized (LAST_25_IN_FLIGHT) {
-                LAST_25_IN_FLIGHT.remove(l);
-            }
+            LAST_25_IN_FLIGHT.remove(l);
         }
+
     }
 
     private static SSLContext newSslContext(UrlInvoker u) throws Exception {
