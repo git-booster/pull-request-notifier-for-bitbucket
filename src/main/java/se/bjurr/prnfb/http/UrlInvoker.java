@@ -19,11 +19,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 import static org.apache.http.HttpVersion.HTTP_1_0;
 import static org.apache.http.HttpVersion.HTTP_1_1;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -152,13 +152,10 @@ public class UrlInvoker {
     }
 
     public HttpResponse invoke() {
-        LOG.info("Url: \"" + this.urlParam + "\"");
-
         final HttpRequestBase httpRequestBase = newHttpRequestBase();
         configureUrl(httpRequestBase);
         addHeaders(httpRequestBase);
         httpRequestBase.setProtocolVersion(httpVersion);
-
         this.response = HttpUtil.doInvoke(this, httpRequestBase);
         if (LOG.isDebugEnabled()) {
             if (this.response != null) {

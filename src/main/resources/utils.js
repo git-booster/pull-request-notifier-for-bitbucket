@@ -177,7 +177,7 @@ define('plugin/prnfb/utils', [
  }
 
  function clearForm(formSelector) {
-  $(formSelector).find('input[type=text], textarea, select').val('');
+  $(formSelector).find('input[type=text], textarea').val('');
   $(formSelector).find('input[type=checkbox]').removeAttr('checked');
   $(formSelector).find('input[type=radio]').prop('checked', false);
  }
@@ -211,24 +211,40 @@ define('plugin/prnfb/utils', [
    });
   });
 
-  function populateSelect(whenDone) {
+  function populateSelect(whenDone, myUuid) {
    clearForm(formSelector);
    $.getJSON(restResource, function(data) {
-    $(formSelector + ' [name=uuid]').empty();
-    $(formSelector + ' [name=uuid]').append('<option value="">New</option>');
+    $(formSelector + ' select').empty();
+    $(formSelector + ' select').append('<option value="">New</option>');
     for (var i = 0; i < data.length; i++) {
      var name = data[i].name;
+     var isSelected = myUuid && (myUuid === data[i].uuid);
+     var mySelected = isSelected ? ' selected="true" ' : ' ';
      name = name.replace(/<script>/g, 'script');
-     $(formSelector + ' [name=uuid]').append('<option value="' + data[i].uuid + '">' + (data[i].projectKey || '') + ' ' + (data[i].repositorySlug || '') + ' ' + name + '</option>');
+     $(formSelector + ' select').append('<option ' + mySelected + ' value="' + data[i].uuid + '">' + (data[i].projectKey || '') + ' ' + (data[i].repositorySlug || '') + ' ' + name + '</option>');
     }
     if (whenDone) {
      whenDone();
     }
    });
   }
-  populateSelect();
 
-  $(formSelector + ' [name=uuid]').change(function() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var myUuid = urlParams.get("myUuid");
+  var myHash = window.location.hash;
+  var myNoOp = function (){};
+
+  populateSelect(myNoOp, myUuid);
+  if (myUuid) {
+   if (myHash === '#pr_notifications' && postUrl.includes("notifications")) {
+    doSetupForm(formSelector, postUrl + '/' + myUuid);
+   }
+   if (myHash === '#pr_buttons' && postUrl.includes("buttons")) {
+    doSetupForm(formSelector, postUrl + '/' + myUuid);
+   }
+  }
+
+  $(formSelector + ' select').change(function() {
    var changedTo = $(this).val();
    if (changedTo) {
     doSetupForm(formSelector, postUrl + '/' + changedTo);
@@ -246,7 +262,7 @@ define('plugin/prnfb/utils', [
 
   $(formSelector + ' button[name=delete]').click(function(e) {
    e.preventDefault();
-   var uuid = $(formSelector).find('[name=uuid]').val();
+   var uuid = $(formSelector).find('select').val();
    if (uuid) {
     $.ajax({
      url: postUrl + '/' + uuid,
@@ -257,6 +273,7 @@ define('plugin/prnfb/utils', [
     });
    }
   });
+
  }
 
  $(document).ready(function() {

@@ -14,6 +14,7 @@ import com.atlassian.bitbucket.util.NamedLink;
 import com.atlassian.bitbucket.util.Operation;
 import se.bjurr.prnfb.http.ClientKeyStore;
 import se.bjurr.prnfb.http.HttpResponse;
+import se.bjurr.prnfb.http.HttpUtil;
 import se.bjurr.prnfb.http.UrlInvoker;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
 import se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -150,6 +152,9 @@ public enum PrnfbVariable {
                     if (prnfbNotification == null || !prnfbNotification.getInjectionUrl().isPresent()) {
                         return "";
                     }
+
+                    HttpUtil.incrementInjection(prnfbNotification.getUuid());
+
                     final PrnfbRenderer renderer =
                             new PrnfbRenderer(
                                     pullRequest,

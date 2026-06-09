@@ -19,11 +19,12 @@ import com.atlassian.bitbucket.pull.PullRequestService;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.event.api.EventListener;
-import javax.inject.Named;
+import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import se.bjurr.prnfb.http.ClientKeyStore;
 import se.bjurr.prnfb.http.HttpResponse;
+import se.bjurr.prnfb.http.HttpUtil;
 import se.bjurr.prnfb.http.NotificationResponse;
 import se.bjurr.prnfb.http.UrlInvoker;
 import se.bjurr.prnfb.service.PrnfbRenderer;
@@ -37,8 +38,10 @@ import se.bjurr.prnfb.settings.PrnfbNotification;
 import se.bjurr.prnfb.settings.PrnfbSettingsData;
 import se.bjurr.prnfb.settings.TRIGGER_IF_MERGE;
 
+import javax.inject.Named;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.atlassian.bitbucket.permission.Permission.ADMIN;
 import static java.lang.Boolean.FALSE;
@@ -57,22 +60,27 @@ public class PrnfbPullRequestEventListener {
 
     private static final Logger LOG = getLogger(PrnfbPullRequestEventListener.class);
 
-    private final ExecutorService executorService;
+    private ExecutorService executorService = Executors.newCachedThreadPool();
+
     private final PrnfbRendererFactory prnfbRendererFactory;
     private final PullRequestService pullRequestService;
     private final SecurityService securityService;
     private final SettingsService settingsService;
 
+    // core = 20
+    // max = 200
+    // queue = 50
+    // keepalive = 25 seconds
+    // do a graceful shutdown
+
     public PrnfbPullRequestEventListener(
             PrnfbRendererFactory prnfbRendererFactory,
             PullRequestService pullRequestService,
-            ExecutorService executorService,
             SettingsService settingsService,
             SecurityService securityService
     ) {
         this.prnfbRendererFactory = prnfbRendererFactory;
         this.pullRequestService = pullRequestService;
-        this.executorService = executorService;
         this.settingsService = settingsService;
         this.securityService = securityService;
     }
@@ -99,34 +107,36 @@ public class PrnfbPullRequestEventListener {
             ClientKeyStore clientKeyStore,
             PrnfbNotification notification
     ) {
-        PrnfbPullRequestAction action = fromPullRequestEvent(pullRequestEvent, notification);
-        VariablesContext variables = new VariablesContextBuilder().setPullRequestEvent(pullRequestEvent).build();
-        PrnfbRenderer renderer = prnfbRendererFactory.create(
+        final PrnfbPullRequestAction action = fromPullRequestEvent(pullRequestEvent, notification);
+        final VariablesContext variables = new VariablesContextBuilder().setPullRequestEvent(pullRequestEvent).build();
+        final PrnfbRenderer renderer = prnfbRendererFactory.create(
                 pullRequestEvent.getPullRequest(),
                 action,
                 notification,
                 variables,
                 pullRequestEvent.getUser()
         );
-        notify(
-                notification,
-                action,
-                pullRequestEvent.getPullRequest(),
-                renderer,
-                clientKeyStore,
-                settings.isShouldAcceptAnyCertificate()
-        );
+
+        // Might as well run it async here, since we throw away the returned object.
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                PrnfbPullRequestEventListener.this.notify(
+                        notification,
+                        action,
+                        pullRequestEvent.getPullRequest(),
+                        renderer,
+                        clientKeyStore,
+                        settings.isShouldAcceptAnyCertificate()
+                );
+            }
+        };
+        executorService.execute(r);
+
     }
 
     public void handleEventAsync(final PullRequestEvent pullRequestEvent) {
-        executorService.execute(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        handleEvent(pullRequestEvent);
-                    }
-                }
-        );
+        handleEvent(pullRequestEvent);
     }
 
     public boolean ignoreBecauseOfConflicting(TRIGGER_IF_MERGE ifMerge, boolean isConflicted) {
@@ -242,6 +252,7 @@ public class PrnfbPullRequestEventListener {
         String method = notification.getMethod().toString();
         String err = null;
         HttpResponse httpResponse = null;
+        HttpUtil.incrementNotification(notification.getUuid());
         try {
             httpResponse = urlInvoker
                     .withProxyServer(notification.getProxyServer())
@@ -324,4 +335,13 @@ public class PrnfbPullRequestEventListener {
     public void onEvent(final PullRequestUpdatedEvent e) {
         handleEventAsync(e);
     }
+
+
+    // This is the important one (onPluginDisabling) that actually gets invoked on shutdown!
+    @EventListener
+    public void onPluginDisabling(final PluginDisablingEvent event) {
+        executorService.shutdown();
+    }
+
+
 }

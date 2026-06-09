@@ -29,6 +29,11 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
+import se.bjurr.prnfb.Java2Json;
+import se.bjurr.prnfb.service.SettingsService;
+import se.bjurr.prnfb.settings.PrnfbButton;
+import se.bjurr.prnfb.settings.PrnfbNotification;
+import se.bjurr.prnfb.settings.PrnfbSettings;
 
 import javax.inject.Named;
 import javax.net.ssl.SSLContext;
@@ -36,9 +41,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -59,6 +68,150 @@ public class HttpUtil implements LifecycleAware {
     public static final ConcurrentHashMap<Long, String[]> LAST_25_FAILURES = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<Long, String[]> LAST_25_ERRORS = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<Long, String[]> LAST_25_IN_FLIGHT = new ConcurrentHashMap<>();
+
+
+    public static final ConcurrentHashMap<UUID, Integer> BUTTON_CLICK_COUNT = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<UUID, Integer> NOTIFICATION_COUNT = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<UUID, Integer> INJECTION_COUNT = new ConcurrentHashMap<>();
+
+    public static void incrementButton(UUID uuid) {
+        increment(BUTTON_CLICK_COUNT, uuid);
+    }
+
+    public static void incrementNotification(UUID uuid) {
+        increment(NOTIFICATION_COUNT, uuid);
+    }
+
+    public static void incrementInjection(UUID uuid) {
+        increment(INJECTION_COUNT, uuid);
+    }
+
+    public static List<String[]> top99_Notifications() {
+        return top99_Dudes(NOTIFICATION_COUNT, false, false);
+    }
+
+    public static List<String[]> top99_Injections() {
+        return top99_Dudes(INJECTION_COUNT, false, true);
+    }
+
+    public static List<String[]> top99_Buttons() {
+        return top99_Dudes(BUTTON_CLICK_COUNT, true, false);
+    }
+
+    public static List<String[]> top99_Dudes(Map<UUID, Integer> m, boolean isButton, boolean isInjection) {
+        PrnfbSettings settings = SettingsService.cachedSettings;
+        List<Struct> structs = new ArrayList<>();
+        for (Map.Entry<UUID, Integer> entry : m.entrySet()) {
+            UUID uuid = entry.getKey();
+            Integer count = entry.getValue();
+            if (count > 0) {
+                Struct s = Struct.fromUuid(settings, uuid, count, isButton, isInjection);
+                structs.add(s);
+            }
+        }
+        Collections.sort(structs);
+        List<String[]> list = new ArrayList<>();
+        for (Struct s : structs) {
+            list.add(s.toStringArray());
+            if (list.size() >= 99) {
+                break;
+            }
+        }
+        return list;
+    }
+
+    private static class Struct implements Comparable<Struct> {
+        private int count;
+        private String uuid;
+        private String proj;
+        private String repo;
+        private String name;
+        private String url;
+
+        public String[] toStringArray() {
+            String[] s = new String[6];
+            s[0] = Integer.toString(this.count);
+            s[1] = trimOrEmpty(this.uuid);
+            s[2] = trimOrEmpty(this.proj);
+            s[3] = trimOrEmpty(this.repo);
+            s[4] = htmlSafe(trimOrEmpty(this.name));
+            s[5] = htmlSafe(trimOrEmpty(this.url));
+            return s;
+        }
+
+        private static String htmlSafe(String s) {
+            s = s.replace("&", "&amp;");
+            s = s.replace("<", "&lt;");
+            s = s.replace(">", "&gt;");
+            return s;
+        }
+
+        private static String trimOrEmpty(String s) {
+            return s != null ? s.trim() : "";
+        }
+
+        public int compareTo(Struct o) {
+            return -1 * Integer.compare(count, o.count);
+        }
+
+        public static Struct fromUuid(
+                PrnfbSettings settings, UUID uuid, Integer count, boolean isButton, boolean isInjection
+        ) {
+            Struct s = new Struct();
+            s.uuid = uuid.toString();
+            s.count = count;
+            String suffix = "?myUuid=" + uuid;
+
+            boolean foundUuid = false;
+            if (isButton) {
+                suffix += "#pr_buttons";
+                for (PrnfbButton b : settings.getButtons()) {
+                    if (uuid.equals(b.getUuid())) {
+                        foundUuid = true;
+                        s.proj = b.getProjectKey().orElse("");
+                        s.repo = b.getRepositorySlug().orElse("");
+                        s.name = b.getName();
+                        s.url = b.getRedirectUrl();
+                        break;
+                    }
+                }
+            } else {
+                suffix += "#pr_notifications";
+                for (PrnfbNotification n : settings.getNotifications()) {
+                    if (uuid.equals(n.getUuid())) {
+                        foundUuid = true;
+                        s.proj = n.getProjectKey().orElse("");
+                        s.repo = n.getRepositorySlug().orElse("");
+                        s.name = n.getName();
+                        s.url = isInjection ? n.getInjectionUrl().orElse("") : n.getUrl();
+                        break;
+                    }
+                }
+            }
+            if (foundUuid) {
+                String url = "admin";
+                if (!"".equals(s.proj)) {
+                    url += "/" + s.proj;
+                }
+                if (!"".equals(s.repo)) {
+                    url += "/" + s.repo;
+                }
+                url += suffix;
+                s.uuid = "<a href='" + url + "'>" + uuid + "</a>";
+            } else {
+                s.name = "ERROR: COULD NOT FIND UUID";
+            }
+            return s;
+        }
+    }
+
+    private static void increment(Map<UUID, Integer> m, UUID u) {
+        if (u != null) {
+            // not actually thread-safe, but we don't care if totals are off by a little
+            Integer val = m.getOrDefault(u, 0);
+            m.put(u, val + 1);
+        }
+    }
 
     public static void reset() {
         if (main != null) {
@@ -134,11 +287,17 @@ public class HttpUtil implements LifecycleAware {
         long start = System.currentTimeMillis();
         Date d = new Date(start);
         final URI uri = httpRequestBase.getURI();
+        String uriString = uri.toASCIIString();
+        if (uriString.length() > 127) {
+            uriString = uriString.substring(0, 127) + "...";
+        }
         String[] forLog =
                 new String[]{
-                        df.format(d), "-", "-", httpRequestBase.getMethod(), "" + contentLength, uri.toString(),
+                        df.format(d), "-", "-", httpRequestBase.getMethod(), "" + contentLength, uriString,
                         "-", "-", h != null ? "PROXY: " + h : "-"
                 };
+        boolean httpOkay = false;
+        boolean httpKindaBad = false;
         put(LAST_25_IN_FLIGHT, start, forLog);
         long delay = -1;
         try {
@@ -149,6 +308,7 @@ public class HttpUtil implements LifecycleAware {
             forLog[2] = Integer.toString(statusCode);
 
             final HttpEntity entity = httpResponse.getEntity();
+            httpOkay = true;
             String entityString = "";
             if (entity != null) {
                 entityString = EntityUtils.toString(entity, UTF_8);
@@ -158,11 +318,13 @@ public class HttpUtil implements LifecycleAware {
             if (200 <= statusCode && statusCode <= 299) {
                 put(LAST_25_SUCCESSES, start, forLog);
             } else {
+                httpKindaBad = true;
                 put(LAST_25_FAILURES, start, forLog);
             }
             return new HttpResponse(uri, statusCode, entityString);
 
         } catch (final Exception e) {
+            httpOkay = false;
             if (delay == -1) {
                 delay = System.currentTimeMillis() - start;
             }
@@ -171,10 +333,17 @@ public class HttpUtil implements LifecycleAware {
             forLog[8] = e.toString();
 
             put(LAST_25_ERRORS, start, forLog);
-            LOG.error("PR-Notifier-HTTP-Failure - " + e);
             throw new RuntimeException(e);
-
         } finally {
+            if (httpOkay) {
+                if (httpKindaBad) {
+                    LOG.warn("PR-Notifier-HTTP-BAD - " + Java2Json.format(forLog));
+                } else {
+                    LOG.info("PR-Notifier-HTTP-OK  - " + Java2Json.format(forLog));
+                }
+            } else {
+                LOG.error("PR-Notifier-HTTP-ERR - " + Java2Json.format(forLog));
+            }
             try {
                 if (httpResponse != null) {
                     httpResponse.close();

@@ -122,8 +122,7 @@ public class PrnfbRenderer {
                         string, ENCODE_FOR.NONE, clientKeyStore, shouldAcceptAnyCertificate, EVERYTHING_URL);
 
         for (final PrnfbVariable variable : PrnfbVariable.values()) {
-            string =
-                    renderVariable(string, encodeFor, clientKeyStore, shouldAcceptAnyCertificate, variable);
+            string = renderVariable(string, encodeFor, clientKeyStore, shouldAcceptAnyCertificate, variable);
         }
         return string;
     }

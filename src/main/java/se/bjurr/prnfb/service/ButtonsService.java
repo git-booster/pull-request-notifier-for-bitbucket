@@ -4,6 +4,7 @@ import com.atlassian.bitbucket.pull.PullRequest;
 import com.atlassian.bitbucket.pull.PullRequestService;
 import com.atlassian.bitbucket.repository.Repository;
 import se.bjurr.prnfb.http.ClientKeyStore;
+import se.bjurr.prnfb.http.HttpUtil;
 import se.bjurr.prnfb.http.NotificationResponse;
 import se.bjurr.prnfb.listener.PrnfbPullRequestAction;
 import se.bjurr.prnfb.listener.PrnfbPullRequestEventListener;
@@ -80,6 +81,9 @@ public class ButtonsService {
             final String formData
     ) {
         PrnfbButton button = settingsService.getButton(buttonUuid);
+        if (button != null) {
+            HttpUtil.incrementButton(button.getUuid());
+        }
         VariablesContext vars = new VariablesContextBuilder().setButton(button).setFormData(formData).build();
 
         List<NotificationResponse> successes = new ArrayList<>();

@@ -45,7 +45,7 @@ public class SettingsService {
     private final TransactionTemplate transactionTemplate;
 
     private static final Object lock = new Object();
-    static volatile PrnfbSettings cachedSettings = null;
+    public static volatile PrnfbSettings cachedSettings = null;
 
     static volatile PrnfbSettingsData lastSeenGlobalSettings = null;
 

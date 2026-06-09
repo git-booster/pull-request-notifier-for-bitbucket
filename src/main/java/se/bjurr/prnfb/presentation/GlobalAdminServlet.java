@@ -7,9 +7,12 @@ import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.sal.api.auth.LoginUriProvider;
+import com.atlassian.sal.api.pluginsettings.PluginSettings;
+import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.sal.api.user.UserProfile;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import se.bjurr.prnfb.Java2Json;
 import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.http.HttpUtil;
 import se.bjurr.prnfb.service.UserCheckService;
@@ -20,6 +23,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +31,7 @@ import java.util.TreeMap;
 
 import static java.util.Optional.empty;
 import static se.bjurr.prnfb.Util.immutableMap;
+import static se.bjurr.prnfb.service.SettingsService.SETTINGS_STORAGE_KEY;
 
 @ExportAsService({GlobalAdminServlet.class})
 @Named("GlobalAdminServlet")
@@ -46,6 +51,8 @@ public class GlobalAdminServlet extends HttpServlet {
     @ComponentImport
     private final UserManager userManager;
 
+    private final PluginSettings pluginSettings;
+
     @Inject
     public GlobalAdminServlet(
             UserManager userManager,
@@ -53,6 +60,7 @@ public class GlobalAdminServlet extends HttpServlet {
             TemplateRenderer renderer,
             RepositoryService repositoryService,
             UserCheckService userCheckService,
+            PluginSettingsFactory pluginSettingsFactory,
             ProjectService projectService
     ) {
         this.userManager = userManager;
@@ -60,6 +68,7 @@ public class GlobalAdminServlet extends HttpServlet {
         this.renderer = renderer;
         this.repositoryService = repositoryService;
         this.userCheckService = userCheckService;
+        this.pluginSettings = pluginSettingsFactory.createGlobalSettings();
         this.projectService = projectService;
     }
 
@@ -72,28 +81,29 @@ public class GlobalAdminServlet extends HttpServlet {
                 return;
             }
 
-            String projectKey = null;
-            String repositorySlug = null;
-
-            final Optional<Repository> repository = getRepository(request.getPathInfo());
-            if (repository.isPresent()) {
-                projectKey = repository.get().getProject().getKey();
-                repositorySlug = repository.get().getSlug();
-            }
-
-            final Optional<Project> project = getProject(request.getPathInfo());
-            if (project.isPresent()) {
-                projectKey = project.get().getKey();
-                repositorySlug = null;
-            }
-
-            boolean isAdmin =
-                    this.userCheckService.isAdmin(user.getUserKey(), projectKey, repositorySlug);
-            boolean isSystemAdmin = this.userCheckService.isSystemAdmin(user.getUserKey());
-
+            final boolean isSystemAdmin = this.userCheckService.isSystemAdmin(user.getUserKey());
             Map<String, Object> context = new HashMap<>();
             String trace = request.getParameter("trace");
             if ("y".equalsIgnoreCase(trace)) {
+                if (!isSystemAdmin) {
+                    response.sendError(401, "Unauthorized - only sys admins allowed here!");
+                    return;
+                }
+
+                String dumpJson = request.getParameter("dumpJson");
+                if ("y".equalsIgnoreCase(dumpJson)) {
+                    String json = (String) pluginSettings.get(SETTINGS_STORAGE_KEY);
+                    if (json != null) {
+                        Object o = Java2Json.parse(json);
+                        json = Java2Json.format(true, o);
+                    } else {
+                        json = "null";
+                    }
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
+
                 String refresh = request.getParameter("refresh");
                 String refreshSuccess = request.getParameter("refreshSuccess");
                 if ("y".equalsIgnoreCase(refresh)) {
@@ -112,19 +122,37 @@ public class GlobalAdminServlet extends HttpServlet {
                 context.put("errors", new TreeMap<>(HttpUtil.LAST_25_ERRORS).values());
                 context.put("in_flight", new TreeMap<>(HttpUtil.LAST_25_IN_FLIGHT).values());
 
+                context.put("activeNotifications", HttpUtil.top99_Notifications());
+                context.put("activeInjections", HttpUtil.top99_Injections());
+                context.put("activeButtons", HttpUtil.top99_Buttons());
+
                 response.setContentType("text/html;charset=UTF-8");
                 this.renderer.render("debug.vm", context, response.getWriter());
                 return;
             }
 
+            String projectKey = null;
+            String repositorySlug = null;
+            final Optional<Repository> repository = getRepository(request.getPathInfo());
             if (repository.isPresent()) {
-                context =
-                        immutableMap(
-                                "repository", repository.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
+                projectKey = repository.get().getProject().getKey();
+                repositorySlug = repository.get().getSlug();
+            }
+            final Optional<Project> project = getProject(request.getPathInfo());
+            if (project.isPresent()) {
+                projectKey = project.get().getKey();
+                repositorySlug = null;
+            }
+            boolean isAdmin = this.userCheckService.isAdmin(user.getUserKey(), projectKey, repositorySlug);
+
+            if (repository.isPresent()) {
+                context = immutableMap(
+                        "repository", repository.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin
+                );
             } else if (project.isPresent()) {
-                context =
-                        immutableMap(
-                                "project", project.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
+                context = immutableMap(
+                        "project", project.get(), "isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin
+                );
             } else {
                 context = immutableMap("isAdmin", isAdmin, "isSystemAdmin", isSystemAdmin);
             }

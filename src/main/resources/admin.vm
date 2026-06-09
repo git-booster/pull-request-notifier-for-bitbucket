@@ -193,7 +193,7 @@
  #end
 
  <!-- //-->
- <h3>Buttons</h3>
+ <h3 id='pr_buttons' name='pr_buttons'>Buttons</h3>
  <p>
   Buttons are added in the pull request view. Only buttons that will trigger at least one configured notification is shown.
  </p>
@@ -306,7 +306,7 @@
   </form>
  </div>
 
- <h3>Notifications</h3>
+ <h3 id='pr_notifications' name='pr_notifications'>Notifications</h3>
  <p>
   A notification is triggered by an event and will result in a URL invocation. The variables above enables you to send whatever information you want as a parameter in that URL.
  </p>
