@@ -113,14 +113,12 @@ public class PrnfbRenderer {
     }
 
     public String render(
-            String string,
-            ENCODE_FOR encodeFor,
-            ClientKeyStore clientKeyStore,
-            Boolean shouldAcceptAnyCertificate) {
-        string =
-                renderVariable(
-                        string, ENCODE_FOR.NONE, clientKeyStore, shouldAcceptAnyCertificate, EVERYTHING_URL);
-
+            String string, ENCODE_FOR encodeFor, ClientKeyStore clientKeyStore,
+            Boolean shouldAcceptAnyCertificate
+    ) {
+        string = renderVariable(
+                string, ENCODE_FOR.NONE, clientKeyStore, shouldAcceptAnyCertificate, EVERYTHING_URL
+        );
         for (final PrnfbVariable variable : PrnfbVariable.values()) {
             string = renderVariable(string, encodeFor, clientKeyStore, shouldAcceptAnyCertificate, variable);
         }
@@ -137,18 +135,18 @@ public class PrnfbRenderer {
         if (containsVariable(string, regExpStr)) {
             String resolved = "";
             try {
-                resolved =
-                        variable.resolve(
-                                pullRequest,
-                                pullRequestAction,
-                                applicationUser,
-                                repositoryService,
-                                propertiesService,
-                                prnfbNotification,
-                                variables,
-                                clientKeyStore,
-                                shouldAcceptAnyCertificate,
-                                securityService);
+                resolved = variable.resolve(
+                        pullRequest,
+                        pullRequestAction,
+                        applicationUser,
+                        repositoryService,
+                        propertiesService,
+                        prnfbNotification,
+                        variables,
+                        clientKeyStore,
+                        shouldAcceptAnyCertificate,
+                        securityService
+                );
                 if (resolved == null) {
                     resolved = "";
                 }

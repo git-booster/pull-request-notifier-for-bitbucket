@@ -99,6 +99,30 @@ public class SettingsService {
         );
     }
 
+    public void disableNotification(UUID uuid) {
+        inSynchronizedTransaction(
+                new TransactionCallback<Void>() {
+                    @Override
+                    public Void doInTransaction() {
+                        doDisableNotification(uuid);
+                        return null;
+                    }
+                }
+        );
+    }
+
+    public void enableNotification(UUID uuid) {
+        inSynchronizedTransaction(
+                new TransactionCallback<Void>() {
+                    @Override
+                    public Void doInTransaction() {
+                        doEnableNotification(uuid);
+                        return null;
+                    }
+                }
+        );
+    }
+
     public void deleteNotification(UUID uuid) {
         inSynchronizedTransaction(
                 new TransactionCallback<Void>() {
@@ -161,7 +185,7 @@ public class SettingsService {
     }
 
     public PrnfbNotification getNotification(UUID notificationUuid) {
-        return findUuidMatch(getPrnfbSettings().getNotifications(), notificationUuid).orElse(null);
+        return getPrnfbSettings().getNotificationByUUID(notificationUuid);
     }
 
     public List<PrnfbNotification> getNotifications() {
@@ -169,27 +193,15 @@ public class SettingsService {
     }
 
     public List<PrnfbNotification> getNotifications(String projectKey) {
-        final List<PrnfbNotification> found = new ArrayList<>();
-        for (final PrnfbNotification candidate : getPrnfbSettings().getNotifications()) {
-            if (candidate.getProjectKey().isPresent()
-                    && candidate.getProjectKey().get().equals(projectKey)) {
-                found.add(candidate);
-            }
-        }
-        return found;
+        return new ArrayList<>(
+                getPrnfbSettings().getNotificationsByProj(projectKey, true)
+        );
     }
 
     public List<PrnfbNotification> getNotifications(String projectKey, String repositorySlug) {
-        final List<PrnfbNotification> found = new ArrayList<>();
-        for (final PrnfbNotification candidate : getPrnfbSettings().getNotifications()) {
-            if (candidate.getProjectKey().isPresent()
-                    && candidate.getProjectKey().get().equals(projectKey)
-                    && candidate.getRepositorySlug().isPresent()
-                    && candidate.getRepositorySlug().get().equals(repositorySlug)) {
-                found.add(candidate);
-            }
-        }
-        return found;
+        return new ArrayList<>(
+                getPrnfbSettings().getNotificationsByRepo(projectKey, repositorySlug)
+        );
     }
 
     public PrnfbSettings getPrnfbSettings() {
@@ -278,6 +290,22 @@ public class SettingsService {
         final List<PrnfbButton> keep = newListWithoutUuid(originalSettings.getButtons(), uuid);
         final PrnfbSettings withoutDeleted = prnfbSettingsBuilder(originalSettings).setButtons(keep).build();
         doSetPrnfbSettings(withoutDeleted);
+    }
+
+    private void doDisableNotification(UUID uuid) {
+        final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
+        PrnfbNotification n = originalSettings.getNotificationByUUID(uuid);
+        if (n.disable()) {
+            doSetPrnfbSettings(originalSettings);
+        }
+    }
+
+    private void doEnableNotification(UUID uuid) {
+        final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
+        PrnfbNotification n = originalSettings.getNotificationByUUID(uuid);
+        if (n.enable()) {
+            doSetPrnfbSettings(originalSettings);
+        }
     }
 
     private void doDeleteNotification(UUID uuid) {

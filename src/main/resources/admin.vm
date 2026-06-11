@@ -39,7 +39,12 @@
  <input type="hidden" id="prnfbProjectKey" name="projectKey" value="$project.key" />
  #else
  <h3>HTTP Tracing</h3>
- <p>Visit the <a href='./admin?trace=y'>HTTP Tracing Page</a> to check on HTTP response health.</p>
+ <p>Visit the <b><a href='./admin?trace=y'>HTTP Tracing Page</a></b> to check on HTTP response health.</p>
+
+ <h3>Configuration Review / Bulk Edit</h3>
+ <p>Visit the <b><a href='./admin?report=y'>Configuration Review Page</a></b> to get a global view
+  of all configured notifications.</p>
+
  #end
 
  <div class="statusresponse"></div>

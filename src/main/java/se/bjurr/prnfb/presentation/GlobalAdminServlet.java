@@ -25,12 +25,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.Optional.empty;
 import static se.bjurr.prnfb.Util.immutableMap;
+import static se.bjurr.prnfb.http.HttpUtil.trimOrEmpty;
 import static se.bjurr.prnfb.service.SettingsService.SETTINGS_STORAGE_KEY;
 
 @ExportAsService({GlobalAdminServlet.class})
@@ -84,7 +86,25 @@ public class GlobalAdminServlet extends HttpServlet {
             final boolean isSystemAdmin = this.userCheckService.isSystemAdmin(user.getUserKey());
             Map<String, Object> context = new HashMap<>();
             String trace = request.getParameter("trace");
-            if ("y".equalsIgnoreCase(trace)) {
+            String report = request.getParameter("report");
+            if ("y".equalsIgnoreCase(report)) {
+                String grep = request.getParameter("grep");
+                grep = trimOrEmpty(grep);
+                if (grep.length() < 3) {
+                    grep = "";
+                }
+                List<List<String>> rows = HttpUtil.getNotifications(
+                        grep, null, projectService, repositoryService
+                );
+
+                context.put("data", rows);
+                context.put("grep", grep);
+                response.setContentType("text/html;charset=UTF-8");
+                this.renderer.render("report.vm", context, response.getWriter());
+
+                return;
+
+            } else if ("y".equalsIgnoreCase(trace)) {
                 if (!isSystemAdmin) {
                     response.sendError(401, "Unauthorized - only sys admins allowed here!");
                     return;

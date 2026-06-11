@@ -1,5 +1,9 @@
 package se.bjurr.prnfb.http;
 
+import com.atlassian.bitbucket.project.Project;
+import com.atlassian.bitbucket.project.ProjectService;
+import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.event.api.EventListener;
 import com.atlassian.plugin.event.events.PluginDisablingEvent;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
@@ -42,9 +46,13 @@ import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -86,19 +94,90 @@ public class HttpUtil implements LifecycleAware {
         increment(INJECTION_COUNT, uuid);
     }
 
-    public static List<String[]> top99_Notifications() {
+    public static List<List<String>> getNotifications(
+            String grep, Boolean boundOnes, ProjectService projectService, RepositoryService repositoryService
+    ) {
+        grep = trimOrEmpty(grep);
+        if (grep.length() < 3) {
+            grep = "";
+        }
+        List<List<String>> list = new ArrayList<>();
+        List<Struct> structs = new ArrayList<>();
+        Map<String, Project> cache = new HashMap<>();
+        PrnfbSettings settings = SettingsService.cachedSettings;
+        if (settings != null) {
+            for (PrnfbNotification n : settings.getNotifications()) {
+                Struct s = Struct.fromNotification(n, projectService, repositoryService, cache);
+                if (!"".equals(grep)) {
+                    if (!passesGrep(grep, s)) {
+                        continue; // don't add this one, no filter match.
+                    }
+                }
+                if (boundOnes == null) {
+                    structs.add(s);
+                } else if (boundOnes && s.isBound) {
+                    structs.add(s);
+                } else if (!boundOnes && !s.isBound) {
+                    structs.add(s);
+                }
+            }
+            Collections.sort(structs, BY_PROJ_REPO);
+            for (Struct s : structs) {
+                list.add(s.toStringList());
+            }
+        }
+        return list;
+    }
+
+    public static String insertHtmlForMatch(String raw, String needleLowerCase, String rawLowerCase) {
+        raw = trimOrEmpty(raw);
+        int x = rawLowerCase.indexOf(needleLowerCase);
+        int len = needleLowerCase.length();
+        raw = raw.substring(0, x) + "<b>" + raw.substring(x, x + len) + "</b>" + raw.substring(x + len);
+        return raw;
+    }
+
+    public static boolean passesGrep(String grep, Struct s) {
+        grep = trimOrEmpty(grep).toLowerCase(Locale.ROOT);
+        boolean pass = false;
+        if (grep.length() > 2) {
+            String p = (trimOrEmpty(s.proj).toLowerCase(Locale.ROOT));
+            if (p.contains(grep)) {
+                pass = true;
+                s.proj = insertHtmlForMatch(s.proj, grep, p);
+            }
+            String r = (trimOrEmpty(s.repo).toLowerCase(Locale.ROOT));
+            if (r.contains(grep)) {
+                pass = true;
+                s.repo = insertHtmlForMatch(s.repo, grep, r);
+            }
+            String n = (trimOrEmpty(s.name).toLowerCase(Locale.ROOT));
+            if (n.contains(grep)) {
+                pass = true;
+                s.name = insertHtmlForMatch(s.name, grep, n);
+            }
+            String u = (trimOrEmpty(s.url).toLowerCase(Locale.ROOT));
+            if (u.contains(grep)) {
+                pass = true;
+                s.url = insertHtmlForMatch(s.url, grep, u);
+            }
+        }
+        return pass;
+    }
+
+    public static List<List<String>> top99_Notifications() {
         return top99_Dudes(NOTIFICATION_COUNT, false, false);
     }
 
-    public static List<String[]> top99_Injections() {
+    public static List<List<String>> top99_Injections() {
         return top99_Dudes(INJECTION_COUNT, false, true);
     }
 
-    public static List<String[]> top99_Buttons() {
+    public static List<List<String>> top99_Buttons() {
         return top99_Dudes(BUTTON_CLICK_COUNT, true, false);
     }
 
-    public static List<String[]> top99_Dudes(Map<UUID, Integer> m, boolean isButton, boolean isInjection) {
+    public static List<List<String>> top99_Dudes(Map<UUID, Integer> m, boolean isButton, boolean isInjection) {
         PrnfbSettings settings = SettingsService.cachedSettings;
         List<Struct> structs = new ArrayList<>();
         for (Map.Entry<UUID, Integer> entry : m.entrySet()) {
@@ -110,9 +189,9 @@ public class HttpUtil implements LifecycleAware {
             }
         }
         Collections.sort(structs);
-        List<String[]> list = new ArrayList<>();
+        List<List<String>> list = new ArrayList<>();
         for (Struct s : structs) {
-            list.add(s.toStringArray());
+            list.add(s.toStringList());
             if (list.size() >= 99) {
                 break;
             }
@@ -120,38 +199,163 @@ public class HttpUtil implements LifecycleAware {
         return list;
     }
 
+    private final static Comparator<Struct> BY_PROJ_REPO = (s1, s2) -> {
+        if (s1 == s2) {
+            return 0;
+        } else if (s1 == null) {
+            return 1;
+        } else if (s2 == null) {
+            return -1;
+        }
+        String p1 = trimOrEmpty(s1.proj);
+        String p2 = trimOrEmpty(s2.proj);
+        if (p1.startsWith(".disabled.")) {
+            p1 = p1.substring(".disabled.".length());
+        }
+        if (p2.startsWith(".disabled.")) {
+            p2 = p2.substring(".disabled.".length());
+        }
+        String r1 = trimOrEmpty(s1.repo);
+        String r2 = trimOrEmpty(s2.repo);
+        String n1 = trimOrEmpty(s1.name);
+        String n2 = trimOrEmpty(s2.name);
+        int c = p1.compareToIgnoreCase(p2);
+        if (c == 0) {
+            c = r1.compareToIgnoreCase(r2);
+            if (c == 0) {
+                c = n1.compareToIgnoreCase(n2);
+                if (c == 0) {
+                    c = s1.uuid.compareToIgnoreCase(s2.uuid);
+                }
+            }
+        }
+        return c;
+    };
+
     private static class Struct implements Comparable<Struct> {
         private int count;
+        private String uuidHtml;
         private String uuid;
         private String proj;
         private String repo;
         private String name;
         private String url;
+        private Boolean isBound;
 
-        public String[] toStringArray() {
-            String[] s = new String[6];
+        public List<String> toStringList() {
+            String[] s = new String[8];
             s[0] = Integer.toString(this.count);
-            s[1] = trimOrEmpty(this.uuid);
+            s[1] = trimOrEmpty(this.uuidHtml);
             s[2] = trimOrEmpty(this.proj);
             s[3] = trimOrEmpty(this.repo);
-            s[4] = htmlSafe(trimOrEmpty(this.name));
-            s[5] = htmlSafe(trimOrEmpty(this.url));
-            return s;
+            s[4] = isBound != null ? (isBound ? "<i class='y'>Yes</b>" : "<i class='n'>No</b>") : "";
+            s[5] = trimOrEmpty(this.name);
+            s[6] = trimOrEmpty(this.url);
+            if (s[6].length() > 99) {
+                s[6] = s[6].substring(0, 99) + "...";
+            }
+            s[7] = trimOrEmpty(this.uuid);
+            return Arrays.asList(s);
         }
 
         private static String htmlSafe(String s) {
-            s = s.replace("&", "&amp;");
-            s = s.replace("<", "&lt;");
-            s = s.replace(">", "&gt;");
+            if (s != null && !"".equals(s)) {
+                s = s.replace("&", "&amp;");
+                s = s.replace("<", "&lt;");
+                s = s.replace(">", "&gt;");
+            }
             return s;
-        }
-
-        private static String trimOrEmpty(String s) {
-            return s != null ? s.trim() : "";
         }
 
         public int compareTo(Struct o) {
             return -1 * Integer.compare(count, o.count);
+        }
+
+        public void setIfBound(
+                ProjectService projectService, RepositoryService repositoryService, Map<String, Project> cache
+        ) {
+            if (isBound != null) {
+                return;
+            }
+            String pKey = proj != null ? proj.trim() : "";
+            String rKey = repo != null ? repo.trim() : "";
+            boolean hasProj = !"".equals(pKey);
+            boolean hasRepo = !"".equals(rKey);
+
+            Project p = null;
+            Repository r = null;
+            if (hasProj) {
+                p = cache.get(pKey);
+                if (p == null) {
+                    try {
+                        p = projectService.getByKey(proj);
+                    } catch (Exception e) {
+                        // swallow
+                        p = null;
+                    }
+                    if (p != null) {
+                        cache.put(pKey, p);
+                    }
+                }
+                if (p != null) {
+                    if (hasRepo) {
+                        try {
+                            r = repositoryService.getBySlug(pKey, rKey);
+                        } catch (Exception e) {
+                            // swallow
+                            r = null;
+                        }
+                    }
+                }
+            }
+
+            if (hasRepo && r != null) {
+                isBound = true; // is an active repo-scoped notification
+            } else if (!hasRepo && hasProj && p != null) {
+                isBound = true; // is an active project-scoped notification
+            } else if (!hasRepo && !hasProj) {
+                isBound = true; // is an active global notification
+            } else {
+                isBound = false; // This one lost its binding (probably from a renaming)
+            }
+        }
+
+        public static Struct fromNotification(
+                PrnfbNotification n, ProjectService projectService, RepositoryService repositoryService,
+                Map<String, Project> cache
+        ) {
+            Struct s = new Struct();
+            UUID u = n.getUuid();
+            Integer count = 0;
+            if (u != null) {
+                count = NOTIFICATION_COUNT.get(u);
+                if (count == null) {
+                    count = 0;
+                }
+            }
+            s.count = count;
+            s.uuid = u != null ? u.toString() : "UUID=UNKNOWN";
+            s.proj = n.getProjectKey().orElse("");
+            s.repo = n.getRepositorySlug().orElse("");
+            s.name = n.getName();
+            s.url = htmlSafe(n.getUrl());
+            s.setIfBound(projectService, repositoryService, cache);
+
+            String suffix = "?myUuid=" + s.uuid;
+            suffix += "#pr_notifications";
+            String url = "admin";
+            boolean isBound = s.isBound != null && s.isBound;
+            if (isBound) {
+                if (!"".equals(s.proj)) {
+                    url += "/" + s.proj;
+                }
+                if (!"".equals(s.repo)) {
+                    url += "/" + s.repo;
+                }
+            }
+            url += suffix;
+            s.uuidHtml = "<a href='" + url + "'>" + s.uuid + "</a>";
+            return s;
         }
 
         public static Struct fromUuid(
@@ -197,12 +401,17 @@ public class HttpUtil implements LifecycleAware {
                     url += "/" + s.repo;
                 }
                 url += suffix;
-                s.uuid = "<a href='" + url + "'>" + uuid + "</a>";
+                s.uuidHtml = "<a href='" + url + "'>" + uuid + "</a>";
             } else {
                 s.name = "ERROR: COULD NOT FIND UUID";
             }
+            s.url = htmlSafe(s.url);
             return s;
         }
+    }
+
+    public static String trimOrEmpty(String s) {
+        return s != null ? s.trim() : "";
     }
 
     private static void increment(Map<UUID, Integer> m, UUID u) {

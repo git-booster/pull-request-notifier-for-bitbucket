@@ -1,6 +1,7 @@
 package se.bjurr.prnfb.settings;
 
 import com.atlassian.bitbucket.pull.PullRequestState;
+import com.google.common.base.Objects;
 import se.bjurr.prnfb.Java2Json;
 import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD;
@@ -23,11 +24,12 @@ import static se.bjurr.prnfb.Util.checkNotNull;
 import static se.bjurr.prnfb.Util.emptyToNull;
 import static se.bjurr.prnfb.Util.firstNotNull;
 import static se.bjurr.prnfb.Util.nullToEmpty;
+import static se.bjurr.prnfb.http.HttpUtil.trimOrEmpty;
 import static se.bjurr.prnfb.http.UrlInvoker.HTTP_METHOD.GET;
 import static se.bjurr.prnfb.service.PrnfbRenderer.ENCODE_FOR.NONE;
 import static se.bjurr.prnfb.settings.TRIGGER_IF_MERGE.ALWAYS;
 
-public class PrnfbNotification implements HasUuid, Restricted, Java2Json._2JS {
+public class PrnfbNotification implements HasUuid, Comparable<PrnfbNotification>, Restricted, Java2Json._2JS {
 
     private static final String DEFAULT_NAME = "Notification";
     private String filterRegexp;
@@ -221,6 +223,22 @@ public class PrnfbNotification implements HasUuid, Restricted, Java2Json._2JS {
         this.triggerIgnoreStateList = builder.getTriggerIgnoreStateList();
         this.postContentEncoding = firstNotNull(builder.getPostContentEncoding(), NONE);
         this.httpVersion = builder.getHttpVersion();
+    }
+
+    public boolean disable() {
+        if (projectKey != null && !projectKey.startsWith(".disabled.")) {
+            this.projectKey = ".disabled." + this.projectKey;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean enable() {
+        if (projectKey != null && projectKey.startsWith(".disabled.")) {
+            this.projectKey = this.projectKey.substring(".disabled.".length());
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -516,37 +534,49 @@ public class PrnfbNotification implements HasUuid, Restricted, Java2Json._2JS {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (filterRegexp == null ? 0 : filterRegexp.hashCode());
-        result = prime * result + (filterString == null ? 0 : filterString.hashCode());
-        result = prime * result + (headers == null ? 0 : headers.hashCode());
-        result = prime * result + (httpVersion == null ? 0 : httpVersion.hashCode());
-        result = prime * result + (injectionUrl == null ? 0 : injectionUrl.hashCode());
-        result = prime * result + (injectionUrlRegexp == null ? 0 : injectionUrlRegexp.hashCode());
-        result = prime * result + (variableName == null ? 0 : variableName.hashCode());
-        result = prime * result + (variableRegex == null ? 0 : variableRegex.hashCode());
-        result = prime * result + (method == null ? 0 : method.hashCode());
-        result = prime * result + (name == null ? 0 : name.hashCode());
-        result = prime * result + (password == null ? 0 : password.hashCode());
-        result = prime * result + (postContent == null ? 0 : postContent.hashCode());
-        result = prime * result + (postContentEncoding == null ? 0 : postContentEncoding.hashCode());
-        result = prime * result + (projectKey == null ? 0 : projectKey.hashCode());
-        result = prime * result + (proxyPassword == null ? 0 : proxyPassword.hashCode());
-        result = prime * result + (proxyPort == null ? 0 : proxyPort.hashCode());
-        result = prime * result + (proxySchema == null ? 0 : proxySchema.hashCode());
-        result = prime * result + (proxyServer == null ? 0 : proxyServer.hashCode());
-        result = prime * result + (proxyUser == null ? 0 : proxyUser.hashCode());
-        result = prime * result + (repositorySlug == null ? 0 : repositorySlug.hashCode());
-        result = prime * result + (triggerIfCanMerge == null ? 0 : triggerIfCanMerge.hashCode());
-        result =
-                prime * result + (triggerIgnoreStateList == null ? 0 : triggerIgnoreStateList.hashCode());
-        result = prime * result + (triggers == null ? 0 : triggers.hashCode());
-        result = prime * result + (updatePullRequestRefs ? 1231 : 1237);
-        result = prime * result + (url == null ? 0 : url.hashCode());
-        result = prime * result + (user == null ? 0 : user.hashCode());
-        result = prime * result + (uuid == null ? 0 : uuid.hashCode());
-        return result;
+        return uuid != null ? uuid.hashCode() : Objects.hashCode(repositorySlug, projectKey, name, url);
+    }
+
+    public int compareTo(PrnfbNotification other) {
+        if (this == other) {
+            return 0;
+        } else if (other == null) {
+            return -1;
+        }
+        String p1 = trimOrEmpty(projectKey);
+        String p2 = trimOrEmpty(other.projectKey);
+        int c = p1.compareToIgnoreCase(p2);
+        if (c == 0) {
+            String r1 = trimOrEmpty(repositorySlug);
+            String r2 = trimOrEmpty(other.projectKey);
+            c = r1.compareToIgnoreCase(r2);
+            if (c == 0) {
+                String n1 = trimOrEmpty(name);
+                String n2 = trimOrEmpty(other.name);
+                c = n1.compareToIgnoreCase(n2);
+                if (c == 0) {
+                    c = n1.compareTo(n2);
+                    if (c == 0) {
+                        String u1 = trimOrEmpty(url);
+                        String u2 = trimOrEmpty(other.url);
+                        c = u1.compareToIgnoreCase(u2);
+                        if (c == 0) {
+                            c = u1.compareTo(u2);
+                            if (c == 0 && uuid != other.uuid) {
+                                if (uuid != null && other.uuid != null) {
+                                    c = uuid.toString().compareToIgnoreCase(other.uuid.toString());
+                                } else if (uuid != null) {
+                                    c = 1;
+                                } else {
+                                    c = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return c;
     }
 
     @Override

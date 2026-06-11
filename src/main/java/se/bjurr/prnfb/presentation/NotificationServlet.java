@@ -3,6 +3,12 @@ package se.bjurr.prnfb.presentation;
 import com.atlassian.annotations.security.XsrfProtectionExcluded;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import se.bjurr.prnfb.presentation.dto.NotificationDTO;
+import se.bjurr.prnfb.service.SettingsService;
+import se.bjurr.prnfb.service.UserCheckService;
+import se.bjurr.prnfb.settings.PrnfbNotification;
+import se.bjurr.prnfb.settings.USER_LEVEL;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.Consumes;
@@ -13,12 +19,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import se.bjurr.prnfb.presentation.dto.NotificationDTO;
-import se.bjurr.prnfb.service.SettingsService;
-import se.bjurr.prnfb.service.UserCheckService;
-import se.bjurr.prnfb.settings.PrnfbNotification;
-import se.bjurr.prnfb.settings.USER_LEVEL;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -83,6 +83,34 @@ public class NotificationServlet {
             return status(UNAUTHORIZED).build();
         }
         settingsService.deleteNotification(notification);
+        return status(OK).build();
+    }
+
+    @GET
+    @Path("/disable/{uuid}")
+    @XsrfProtectionExcluded
+    @Produces(APPLICATION_JSON)
+    public Response disable(@PathParam("uuid") UUID notification) {
+        PrnfbNotification notificationDto = settingsService.getNotification(notification);
+        USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
+        if (!userCheckService.isAdminAllowed(notificationDto, adminRestriction)) {
+            return status(UNAUTHORIZED).build();
+        }
+        settingsService.disableNotification(notification);
+        return status(OK).build();
+    }
+
+    @GET
+    @Path("/enable/{uuid}")
+    @XsrfProtectionExcluded
+    @Produces(APPLICATION_JSON)
+    public Response enable(@PathParam("uuid") UUID notification) {
+        PrnfbNotification notificationDto = settingsService.getNotification(notification);
+        USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
+        if (!userCheckService.isAdminAllowed(notificationDto, adminRestriction)) {
+            return status(UNAUTHORIZED).build();
+        }
+        settingsService.enableNotification(notification);
         return status(OK).build();
     }
 

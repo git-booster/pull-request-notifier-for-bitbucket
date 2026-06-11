@@ -91,12 +91,8 @@ public class ButtonsService {
             PrnfbPullRequestAction pullRequestAction = BUTTON_TRIGGER;
             PrnfbRenderer renderer = prnfbRendererFactory.create(pr, pullRequestAction, prnfbNotification, vars);
             if (prnfbPullRequestEventListener.isNotificationTriggeredByAction(
-                    prnfbNotification,
-                    pullRequestAction,
-                    renderer,
-                    pr,
-                    clientKeyStore,
-                    shouldAcceptAnyCertificate
+                    prnfbNotification, pullRequestAction, renderer, pr,
+                    clientKeyStore, shouldAcceptAnyCertificate, true
             )) {
                 NotificationResponse response = prnfbPullRequestEventListener.notify(
                         prnfbNotification,
@@ -164,12 +160,8 @@ public class ButtonsService {
         for (PrnfbNotification prnfbNotification : notifications) {
             PrnfbRenderer renderer = prnfbRendererFactory.create(pr, pullRequestAction, prnfbNotification, variables);
             if (prnfbPullRequestEventListener.isNotificationTriggeredByAction(
-                    prnfbNotification,
-                    pullRequestAction,
-                    renderer,
-                    pr,
-                    clientKeyStore,
-                    shouldAcceptAnyCertificate
+                    prnfbNotification, pullRequestAction, renderer, pr,
+                    clientKeyStore, shouldAcceptAnyCertificate, true
             )) {
                 return TRUE;
             }

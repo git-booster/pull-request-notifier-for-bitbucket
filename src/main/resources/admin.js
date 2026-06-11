@@ -35,11 +35,44 @@ define('plugin/prnfb/admin', [
    $('.prnfb button').attr('aria-disabled', 'false');
   });
 
+ function disableOrDelete() {
+  var buttonText = $(this).text();
+  var uuid = this.value;
+  var action = "unset";
+  var doAction = false;
+  var doDelete = false;
+  if (buttonText === "DELETE") {
+   action = "";
+   doAction = true;
+   doDelete = true;
+  } else if (buttonText === "ENABLE") {
+   action = "/enable";
+   doAction = true;
+  } else if (buttonText === "DISABLE") {
+   action = "/disable";
+   doAction = true;
+  }
+
+  if (doAction) {
+   $.ajax({
+    url: notificationsAdminUrlPostUrl + action + '/' + uuid,
+    type: doDelete ? 'DELETE' : 'GET',
+    success: function (result) {
+     window.location.reload();
+    }
+   });
+  }
+ }
+
  $(document).ready(function() {
   utils.setupForm('#prnfbsettingsadmin', settingsAdminUrl, settingsAdminUrlPostUrl);
   utils.setupForms('#prnfbbuttonadmin', buttonsAdminUrl, buttonsAdminUrlPostUrl);
   utils.setupForms('#prnfbnotificationadmin', notificationsAdminUrl, notificationsAdminUrlPostUrl);
+
+  $('#prNotifierConfigReport button').click(disableOrDelete);
+
  });
+
 });
 
 

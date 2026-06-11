@@ -3,9 +3,15 @@ package se.bjurr.prnfb.settings;
 import se.bjurr.prnfb.Java2Json;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
 
 import static se.bjurr.prnfb.Util.checkNotNull;
 
@@ -13,7 +19,14 @@ public class PrnfbSettings implements Java2Json._2JS {
 
     public static final String UNCHANGED = "KEEP_THIS_TO_LEAVE_UNCHANGED";
     private List<PrnfbButton> buttons;
+
     private List<PrnfbNotification> notifications = new ArrayList<>();
+
+    private Set<PrnfbNotification> notificationsGlobal = null;
+    private Map<String, Set<PrnfbNotification>> notificationsByProj = null;
+    private Map<String, Map<String, Set<PrnfbNotification>>> notificationsByRepo = null;
+    private Map<UUID, PrnfbNotification> notificationByUUID = null;
+
     private PrnfbSettingsData prnfbSettingsData;
 
     public PrnfbSettings() {
@@ -108,6 +121,101 @@ public class PrnfbSettings implements Java2Json._2JS {
 
     public List<PrnfbNotification> getNotifications() {
         return this.notifications;
+    }
+
+    public Set<PrnfbNotification> getNotificationsGlobal() {
+        if (notificationsGlobal == null) {
+            Set<PrnfbNotification> set = new TreeSet<>();
+            for (PrnfbNotification n : notifications) {
+                boolean hasR = n.getRepositorySlug().isPresent();
+                boolean hasP = n.getProjectKey().isPresent();
+                if (!hasR && !hasP) {
+                    set.add(n);
+                }
+            }
+            this.notificationsGlobal = set;
+        }
+        return notificationsGlobal;
+    }
+
+    public PrnfbNotification getNotificationByUUID(UUID uuid) {
+        if (notificationByUUID == null) {
+            Map<UUID, PrnfbNotification> m = new HashMap<>();
+            for (PrnfbNotification n : notifications) {
+                UUID u = n.getUuid();
+                m.putIfAbsent(u, n);
+            }
+            this.notificationByUUID = m;
+        }
+        return notificationByUUID.get(uuid);
+    }
+
+    public Set<PrnfbNotification> getNotificationsByRepo(String projectKey, String repoSlug) {
+        if (notificationsByRepo == null) {
+            Map<String, Map<String, Set<PrnfbNotification>>> m = new TreeMap<>();
+            for (PrnfbNotification n : notifications) {
+                boolean hasP = n.getProjectKey().isPresent();
+                boolean hasR = n.getRepositorySlug().isPresent();
+                if (hasP && hasR) {
+                    String pKey = n.getProjectKey().get();
+                    String rKey = n.getRepositorySlug().get();
+                    Map<String, Set<PrnfbNotification>> mm = m.computeIfAbsent(pKey, k -> new TreeMap<>());
+                    Set<PrnfbNotification> set = mm.computeIfAbsent(rKey, k -> new TreeSet<>());
+                    set.add(n);
+                }
+            }
+            this.notificationsByRepo = m;
+        }
+        Map<String, Set<PrnfbNotification>> m = notificationsByRepo.get(projectKey);
+        if (m != null) {
+            Set<PrnfbNotification> set = m.get(repoSlug);
+            if (set != null) {
+                return set;
+            }
+        }
+        return Collections.emptySet();
+    }
+
+    public Set<PrnfbNotification> getNotificationsByProj(String projectKey, boolean includeRepoLevel) {
+        if (notificationsByProj == null) {
+            Map<String, Set<PrnfbNotification>> m = new TreeMap<>();
+            for (PrnfbNotification n : notifications) {
+                boolean hasR = n.getRepositorySlug().isPresent();
+                boolean hasP = n.getProjectKey().isPresent();
+                if (!hasR && hasP) {
+                    String pKey = n.getProjectKey().get();
+                    Set<PrnfbNotification> set = m.computeIfAbsent(pKey, k -> new TreeSet<>());
+                    set.add(n);
+                }
+            }
+            this.notificationsByProj = m;
+        }
+        Set<PrnfbNotification> set = notificationsByProj.get(projectKey);
+        if (includeRepoLevel) {
+            TreeSet<PrnfbNotification> includingReposSet = new TreeSet<>();
+            if (set != null) {
+                includingReposSet.addAll(set);
+            }
+
+            // Just to initialize the Map in case getNotificationsByRepo() hasn't been called yet.
+            if (notificationsByRepo == null) {
+                getNotificationsByRepo("", "");
+            }
+
+            Map<String, Set<PrnfbNotification>> m = notificationsByRepo.get(projectKey);
+            if (m != null) {
+                for (Map.Entry<String, Set<PrnfbNotification>> entry : m.entrySet()) {
+                    Set<PrnfbNotification> values = entry.getValue();
+                    includingReposSet.addAll(values);
+                }
+            }
+            set = includingReposSet;
+        }
+
+        if (set != null) {
+            return set;
+        }
+        return Collections.emptySet();
     }
 
     public PrnfbSettingsData getPrnfbSettingsData() {

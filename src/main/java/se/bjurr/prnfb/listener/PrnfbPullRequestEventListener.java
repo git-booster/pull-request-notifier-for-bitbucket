@@ -14,8 +14,11 @@ import com.atlassian.bitbucket.event.pull.PullRequestParticipantStatusUpdatedEve
 import com.atlassian.bitbucket.event.pull.PullRequestReopenedEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestRescopedEvent;
 import com.atlassian.bitbucket.event.pull.PullRequestUpdatedEvent;
+import com.atlassian.bitbucket.project.Project;
 import com.atlassian.bitbucket.pull.PullRequest;
 import com.atlassian.bitbucket.pull.PullRequestService;
+import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.Operation;
 import com.atlassian.event.api.EventListener;
@@ -39,6 +42,8 @@ import se.bjurr.prnfb.settings.PrnfbSettingsData;
 import se.bjurr.prnfb.settings.TRIGGER_IF_MERGE;
 
 import javax.inject.Named;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,7 +65,7 @@ public class PrnfbPullRequestEventListener {
 
     private static final Logger LOG = getLogger(PrnfbPullRequestEventListener.class);
 
-    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private ExecutorService ourOwnExecutorService = Executors.newCachedThreadPool();
 
     private final PrnfbRendererFactory prnfbRendererFactory;
     private final PullRequestService pullRequestService;
@@ -86,13 +91,25 @@ public class PrnfbPullRequestEventListener {
     }
 
     private void handleEvent(final PullRequestEvent pullRequestEvent) {
-        PullRequest pullRequest = pullRequestEvent.getPullRequest();
+        final PullRequest pr = pullRequestEvent.getPullRequest();
         PrnfbSettingsData settings = settingsService.getPrnfbSettingsData();
         ClientKeyStore clientKeyStore = new ClientKeyStore(settings);
-        if (pullRequest.isClosed() && pullRequestEvent instanceof PullRequestCommentEvent) {
+        if (pr.isClosed() && pullRequestEvent instanceof PullRequestCommentEvent) {
             return;
         }
-        for (PrnfbNotification notification : settingsService.getNotifications()) {
+        Repository r = pr.getToRef().getRepository();
+        Project p = r.getProject();
+        List<PrnfbNotification> list = new ArrayList<>();
+        list.addAll(
+                settingsService.getPrnfbSettings().getNotificationsByRepo(p.getKey(), r.getSlug())
+        );
+        list.addAll(
+                settingsService.getPrnfbSettings().getNotificationsByProj(p.getKey(), false)
+        );
+        list.addAll(
+                settingsService.getPrnfbSettings().getNotificationsGlobal()
+        );
+        for (PrnfbNotification notification : list) {
             try {
                 handleEventNotification(pullRequestEvent, settings, clientKeyStore, notification);
             } catch (final Exception e) {
@@ -107,32 +124,30 @@ public class PrnfbPullRequestEventListener {
             ClientKeyStore clientKeyStore,
             PrnfbNotification notification
     ) {
+        final PullRequest pr = pullRequestEvent.getPullRequest();
+        final ApplicationUser user = pullRequestEvent.getUser();
         final PrnfbPullRequestAction action = fromPullRequestEvent(pullRequestEvent, notification);
         final VariablesContext variables = new VariablesContextBuilder().setPullRequestEvent(pullRequestEvent).build();
-        final PrnfbRenderer renderer = prnfbRendererFactory.create(
-                pullRequestEvent.getPullRequest(),
-                action,
-                notification,
-                variables,
-                pullRequestEvent.getUser()
+        final PrnfbRenderer renderer = prnfbRendererFactory.create(pr, action, notification, variables, user);
+        final boolean acceptAnyCertificate = settings.isShouldAcceptAnyCertificate();
+
+        // Let's do a quick pre-check to see if the notification is even worth spawning a thread for:
+        boolean shouldRunNotification = isNotificationTriggeredByAction(
+                notification, action, renderer, pr, clientKeyStore, acceptAnyCertificate, false
         );
 
-        // Might as well run it async here, since we throw away the returned object.
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                PrnfbPullRequestEventListener.this.notify(
-                        notification,
-                        action,
-                        pullRequestEvent.getPullRequest(),
-                        renderer,
-                        clientKeyStore,
-                        settings.isShouldAcceptAnyCertificate()
-                );
-            }
-        };
-        executorService.execute(r);
-
+        if (shouldRunNotification) {
+            // Might as well run it async here, since we throw away the returned object.
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    PrnfbPullRequestEventListener.this.notify(
+                            notification, action, pr, renderer, clientKeyStore, acceptAnyCertificate
+                    );
+                }
+            };
+            ourOwnExecutorService.execute(r);
+        }
     }
 
     public void handleEventAsync(final PullRequestEvent pullRequestEvent) {
@@ -149,7 +164,10 @@ public class PrnfbPullRequestEventListener {
             final PrnfbRenderer renderer,
             final PullRequest pullRequest,
             final ClientKeyStore clientKeyStore,
-            final Boolean shouldAcceptAnyCertificate
+            final Boolean shouldAcceptAnyCertificate,
+
+            // The full "is this notification enabled" logic involves sending additional HttpRequests
+            final boolean doFullCheck
     ) {
         if (!notification.getTriggers().contains(pullRequestAction)) {
             return FALSE;
@@ -170,6 +188,18 @@ public class PrnfbPullRequestEventListener {
                 return FALSE;
             }
         }
+        if (notification.getTriggerIgnoreStateList().contains(pullRequest.getState())) {
+            return FALSE;
+        }
+        if (notification.getTriggerIfCanMerge() != ALWAYS) {
+            // Cannot perform canMerge unless PR is open
+            final boolean notYetMerged = pullRequest.isOpen();
+            final boolean isConflicted = notYetMerged && hasConflicts(pullRequest);
+            if (ignoreBecauseOfConflicting(notification.getTriggerIfCanMerge(), isConflicted)) {
+                return FALSE;
+            }
+        }
+
         if (notification.getFilterRegexp().isPresent()
                 && notification.getFilterString().isPresent()
                 && !compile(notification.getFilterRegexp().get()).matcher(
@@ -182,17 +212,22 @@ public class PrnfbPullRequestEventListener {
         ).find()) {
             return FALSE;
         }
-        if (notification.getTriggerIgnoreStateList().contains(pullRequest.getState())) {
-            return FALSE;
-        }
-        if (notification.getTriggerIfCanMerge() != ALWAYS) {
-            // Cannot perform canMerge unless PR is open
-            final boolean notYetMerged = pullRequest.isOpen();
-            final boolean isConflicted = notYetMerged && hasConflicts(pullRequest);
-            if (ignoreBecauseOfConflicting(notification.getTriggerIfCanMerge(), isConflicted)) {
+
+        if (doFullCheck) {
+            if (notification.getFilterRegexp().isPresent()
+                    && notification.getFilterString().isPresent()
+                    && !compile(notification.getFilterRegexp().get()).matcher(
+                    renderer.render(
+                            notification.getFilterString().get(),
+                            ENCODE_FOR.NONE,
+                            clientKeyStore,
+                            shouldAcceptAnyCertificate
+                    )
+            ).find()) {
                 return FALSE;
             }
         }
+
         return TRUE;
     }
 
@@ -217,7 +252,7 @@ public class PrnfbPullRequestEventListener {
             final ClientKeyStore clientKeyStore,
             final Boolean acceptAny) {
         if (!isNotificationTriggeredByAction(
-                notification, pullRequestAction, renderer, pullRequest, clientKeyStore, acceptAny
+                notification, pullRequestAction, renderer, pullRequest, clientKeyStore, acceptAny, true
         )) {
             return null;
         }
@@ -340,7 +375,7 @@ public class PrnfbPullRequestEventListener {
     // This is the important one (onPluginDisabling) that actually gets invoked on shutdown!
     @EventListener
     public void onPluginDisabling(final PluginDisablingEvent event) {
-        executorService.shutdown();
+        ourOwnExecutorService.shutdown();
     }
 
 

@@ -1,0 +1,66 @@
+<html>
+
+<head>
+    <title>PR-Notifier - Configuration Review</title>
+    <meta name="decorator" content="atl.admin">
+    <meta name="activeTab" content="se.bjurr.prnfb.adminlevel">
+
+    $webResourceManager.requireResource("se.bjurr.prnfs.pull-request-notifier-for-stash:resources")
+    $webResourceManager.requireResource("com.atlassian.auiplugin:aui-select")
+    $webResourceManager.requireResource("com.atlassian.auiplugin:aui-toggle")
+    $webResourceManager.requireResource("com.atlassian.auiplugin:aui-experimental-expander")
+
+    <style type="text/css">
+        th, td {padding-right: 8px; white-space: nowrap; }
+        th {font-weight: bold; text-align: left; vertical-align: bottom; }
+        #prNotifierConfigReport i.y { font-style: normal; color: darkgreen; }
+        #prNotifierConfigReport i.n { font-style: normal; font-weight: bold; color: darkred; }
+        #prNotifierConfigReport b { font-style: normal; font-weight: bold; color: red; }
+    </style>
+    <script>
+
+    </script>
+</head>
+
+<body>
+
+<h1>PR-Notifier - Configuration Review</h1>
+<br/>&nbsp;
+<form action="admin" method="GET">
+    <input type="hidden" name="report" value="y"/>
+    Search/filter: &nbsp; <input type="text" id="grep" name="grep" value="$grep" tabindex="5" /> &nbsp;
+    <script>var myGrep = document.getElementById("grep"); myGrep.focus(); myGrep.select();</script>
+    <input type="reset" value="Clear" onClick="window.location='admin?report=y'; return false;" tabindex="5" /> &nbsp;
+    <input type="submit" value="Apply Filter" tabindex="5" />
+    &nbsp; (minimum 3 characters required to filter)
+</form>
+<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 1em;" id="prNotifierConfigReport">
+    <tbody>
+    <tr><th colspan="9"><h2>$data.size() Notifications #if($grep.length() > 0) contain "$grep" #end</h2></th></tr>
+    <tr><th> </th><th> </th><th> </th><th>Invocations</th><th>UUID</th><th>Project</th><th>Repository</th><th>Active</th><th>Name</th><th>URL</th></tr>
+
+        #foreach( $row in $data )
+        <tr>
+            #if($row.get(2).length() == 0) <th colspan="3" style="text-align: center;">GLOBAL NOTIFICATION</th> #else
+              <td><button value="$row.get(7)" #if($row.get(4).contains("Yes")) disabled='disabled' #end>DELETE</button></td>
+              <td><button value="$row.get(7)" #if($row.get(4).contains("No"))  disabled='disabled' #end>DISABLE</button></td>
+              <td><button value="$row.get(7)" #if($row.get(2).contains("disabled")) #else disabled='disabled' #end>ENABLE</button></td>
+            #end
+            #foreach( $itemAsHtml in $row )
+                <td>$itemAsHtml</td>
+                #if( $velocityCount > 6 )
+                    #break
+                #end
+            #end
+        </tr>
+        #end
+    <tr><td>&nbsp;</td></tr>
+    </tbody>
+
+</table>
+
+
+
+</body>
+
+</html>
