@@ -74,21 +74,16 @@ window.addEventListener("load", function load(event) {
             var escapedName = _.escape(name);
             return '<section role="dialog" id="confirm-dialog" class="aui-layer aui-dialog2 aui-dialog2-medium"' + //
                 ' data-aui-remove-on-hide="true" aria-hidden="true">' + //
-                '    <!-- Dialog header -->' + //
                 '    <header class="aui-dialog2-header">' + //
                 '        <h2 class="aui-dialog2-header-main">' + escapedName + '</h2>' + //
-                '        <!-- Close icon -->' + //
                 '        <a class="aui-dialog2-header-close">' + //
                 '            <span class="aui-icon aui-icon-small aui-iconfont-close-dialog">Close</span>' + //
                 '        </a>' + //
                 '    </header>' + //
-                '    <!-- Main dialog content -->' + //
                 '    <div class="aui-dialog2-content">' + //
                 content + //
                 '    </div>' + //
-                '    <!-- Dialog footer -->' + //
                 '    <footer class="aui-dialog2-footer">' + //
-                '        <!-- Actions to render on the right of the footer -->' + //
                 '        <div class="aui-dialog2-footer-actions">' + //
                 '            <button id="dialog-submit-button" class="aui-button aui-button-primary">' + name + '</button>' + //
                 '            <button id="dialog-close-button" class="aui-button aui-button-link">Close</button>' + //
@@ -98,7 +93,6 @@ window.addEventListener("load", function load(event) {
         };
 
         var inputTemplate = function (name, item) {
-            var escapedName = _.escape(name);
             var escapedLabel = _.escape(item.label);
             var escapedValue = _.escape(item.defaultValue);
             var escapedDescription = _.escape(item.description);

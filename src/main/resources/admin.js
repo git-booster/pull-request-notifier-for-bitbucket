@@ -52,15 +52,19 @@ define('plugin/prnfb/admin', [
    action = "/disable";
    doAction = true;
   }
-
-  if (doAction) {
-   $.ajax({
-    url: notificationsAdminUrlPostUrl + action + '/' + uuid,
-    type: doDelete ? 'DELETE' : 'GET',
-    success: function (result) {
-     window.location.reload();
-    }
-   });
+  var type = document.getElementById('prnfb_report_type');
+  if (type) {
+   type = type.value;
+   var adminRestUrl = type === 'buttons' ? buttonsAdminUrl : notificationsAdminUrlPostUrl;
+   if (doAction) {
+    $.ajax({
+     url: adminRestUrl + action + '/' + uuid,
+     type: doDelete ? 'DELETE' : 'GET',
+     success: function (result) {
+      window.location.reload();
+     }
+    });
+   }
   }
  }
 

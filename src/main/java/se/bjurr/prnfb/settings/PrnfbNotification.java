@@ -548,7 +548,7 @@ public class PrnfbNotification implements HasUuid, Comparable<PrnfbNotification>
         int c = p1.compareToIgnoreCase(p2);
         if (c == 0) {
             String r1 = trimOrEmpty(repositorySlug);
-            String r2 = trimOrEmpty(other.projectKey);
+            String r2 = trimOrEmpty(other.repositorySlug);
             c = r1.compareToIgnoreCase(r2);
             if (c == 0) {
                 String n1 = trimOrEmpty(name);
@@ -581,61 +581,7 @@ public class PrnfbNotification implements HasUuid, Comparable<PrnfbNotification>
 
     @Override
     public String toString() {
-        return "PrnfbNotification [filterRegexp="
-                + filterRegexp
-                + ", filterString="
-                + filterString
-                + ", headers="
-                + headers
-                + ", injectionUrl="
-                + injectionUrl
-                + ", injectionUrlRegexp="
-                + injectionUrlRegexp
-                + ", variableName="
-                + variableName
-                + ", variableRegex="
-                + variableRegex
-                + ", method="
-                + method
-                + ", name="
-                + name
-                + ", password="
-                + password
-                + ", postContent="
-                + postContent
-                + ", projectKey="
-                + projectKey
-                + ", proxyPassword="
-                + proxyPassword
-                + ", proxyPort="
-                + proxyPort
-                + ", proxyServer="
-                + proxyServer
-                + ", proxyUser="
-                + proxyUser
-                + ", repositorySlug="
-                + repositorySlug
-                + ", triggerIfCanMerge="
-                + triggerIfCanMerge
-                + ", triggerIgnoreStateList="
-                + triggerIgnoreStateList
-                + ", triggers="
-                + triggers
-                + ", updatePullRequestRefs="
-                + updatePullRequestRefs
-                + ", url="
-                + url
-                + ", user="
-                + user
-                + ", uuid="
-                + uuid
-                + ", postContentEncoding="
-                + postContentEncoding
-                + ", proxySchema="
-                + proxySchema
-                + ", httpVersion="
-                + httpVersion
-                + "]";
+        return "PR-Notification " + uuid + " " + projectKey + " " + repositorySlug + " " + name;
     }
 
     public ENCODE_FOR getPostContentEncoding() {

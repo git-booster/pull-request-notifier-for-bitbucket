@@ -32,6 +32,7 @@ import java.util.TreeMap;
 
 import static java.util.Optional.empty;
 import static se.bjurr.prnfb.Util.immutableMap;
+import static se.bjurr.prnfb.http.HttpUtil.PAGE_SIZE;
 import static se.bjurr.prnfb.http.HttpUtil.trimOrEmpty;
 import static se.bjurr.prnfb.service.SettingsService.SETTINGS_STORAGE_KEY;
 
@@ -88,20 +89,51 @@ public class GlobalAdminServlet extends HttpServlet {
             String trace = request.getParameter("trace");
             String report = request.getParameter("report");
             if ("y".equalsIgnoreCase(report)) {
+
+                String type = request.getParameter("type");
+                int page = Util.toLong(request.getParameter("page"), 1L).intValue();
+                page = Math.max(1, page);
+
                 String grep = request.getParameter("grep");
                 grep = trimOrEmpty(grep);
                 if (grep.length() < 3) {
                     grep = "";
                 }
-                List<List<String>> rows = HttpUtil.getNotifications(
-                        grep, null, projectService, repositoryService
+                boolean getButtons = "buttons".equalsIgnoreCase(type);
+                int[] totalCount = new int[1];
+                List<List<String>> rows = HttpUtil.getObjs(
+                        grep, null, projectService, repositoryService, getButtons, page, totalCount
                 );
+                int last = (((totalCount[0] - 1) / PAGE_SIZE)) + 1;
+                if (page > last) {
+                    page = last;
+                }
 
+                String noun = getButtons ? "Buttons" : "Notifications";
+                String title = "Showing " + rows.size() + (getButtons ? " Buttons" : " Notifications");
+                if (rows.size() == 1) {
+                    title = title.substring(0, title.length() - 1).trim();
+                }
+                if (grep.length() > 0) {
+                    if (rows.size() == 1) {
+                        title += " that contains \"" + grep + "\"";
+                    } else {
+                        title += " that contain \"" + grep + "\"";
+                    }
+                }
+                title += " (Page=" + page + ", Total " + noun + "=" + totalCount[0] + ")";
+                context.put("title", title);
+                context.put("type", getButtons ? "buttons" : "notifications");
                 context.put("data", rows);
                 context.put("grep", grep);
+                context.put("page", page);
+                context.put("prev", page - 1);
+                context.put("next", page + 1);
+                context.put("last", last);
+                context.put("since", HttpUtil.START_TIME);
+                context.put("sinceDuration", (System.currentTimeMillis() - HttpUtil.START_TIME.getTime()) / 1000L);
                 response.setContentType("text/html;charset=UTF-8");
                 this.renderer.render("report.vm", context, response.getWriter());
-
                 return;
 
             } else if ("y".equalsIgnoreCase(trace)) {
@@ -110,15 +142,17 @@ public class GlobalAdminServlet extends HttpServlet {
                     return;
                 }
 
+                String json = (String) pluginSettings.get(SETTINGS_STORAGE_KEY);
+                if (json != null) {
+                    Object o = Java2Json.parse(json);
+                    json = Java2Json.format(true, o);
+                } else {
+                    json = "null";
+                }
+                long dumpSize = json.length() / 1024L;
+
                 String dumpJson = request.getParameter("dumpJson");
                 if ("y".equalsIgnoreCase(dumpJson)) {
-                    String json = (String) pluginSettings.get(SETTINGS_STORAGE_KEY);
-                    if (json != null) {
-                        Object o = Java2Json.parse(json);
-                        json = Java2Json.format(true, o);
-                    } else {
-                        json = "null";
-                    }
                     response.setContentType("application/json;charset=UTF-8");
                     response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
                     return;
@@ -137,14 +171,17 @@ public class GlobalAdminServlet extends HttpServlet {
                 }
 
                 // pop them into TreeMaps so that they are sorted by timestamp.
+                context.put("dumpSize", "" + dumpSize);
                 context.put("successes", new TreeMap<>(HttpUtil.LAST_25_SUCCESSES).values());
                 context.put("failures", new TreeMap<>(HttpUtil.LAST_25_FAILURES).values());
                 context.put("errors", new TreeMap<>(HttpUtil.LAST_25_ERRORS).values());
                 context.put("in_flight", new TreeMap<>(HttpUtil.LAST_25_IN_FLIGHT).values());
 
-                context.put("activeNotifications", HttpUtil.top99_Notifications());
-                context.put("activeInjections", HttpUtil.top99_Injections());
-                context.put("activeButtons", HttpUtil.top99_Buttons());
+                context.put("activeNotifications", HttpUtil.top25_Notifications());
+                context.put("activeInjections", HttpUtil.top25_Injections());
+                context.put("activeButtons", HttpUtil.top25_Buttons());
+                context.put("since", HttpUtil.START_TIME);
+                context.put("sinceDuration", (System.currentTimeMillis() - HttpUtil.START_TIME.getTime()) / 1000L);
 
                 response.setContentType("text/html;charset=UTF-8");
                 this.renderer.render("debug.vm", context, response.getWriter());

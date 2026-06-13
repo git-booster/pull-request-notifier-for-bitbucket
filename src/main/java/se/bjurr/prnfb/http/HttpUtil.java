@@ -72,6 +72,7 @@ public class HttpUtil implements LifecycleAware {
     public HttpUtil() {
     }
 
+    public static final Date START_TIME = new Date();
     public static final ConcurrentHashMap<Long, String[]> LAST_25_SUCCESSES = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<Long, String[]> LAST_25_FAILURES = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<Long, String[]> LAST_25_ERRORS = new ConcurrentHashMap<>();
@@ -94,8 +95,9 @@ public class HttpUtil implements LifecycleAware {
         increment(INJECTION_COUNT, uuid);
     }
 
-    public static List<List<String>> getNotifications(
-            String grep, Boolean boundOnes, ProjectService projectService, RepositoryService repositoryService
+    public static List<List<String>> getObjs(
+            String grep, Boolean boundOnes, ProjectService projectService, RepositoryService repositoryService,
+            boolean getButtons, int page, int[] totalCount
     ) {
         grep = trimOrEmpty(grep);
         if (grep.length() < 3) {
@@ -103,11 +105,18 @@ public class HttpUtil implements LifecycleAware {
         }
         List<List<String>> list = new ArrayList<>();
         List<Struct> structs = new ArrayList<>();
-        Map<String, Project> cache = new HashMap<>();
+        Map<String, Object> cache = new HashMap<>();
         PrnfbSettings settings = SettingsService.cachedSettings;
         if (settings != null) {
-            for (PrnfbNotification n : settings.getNotifications()) {
-                Struct s = Struct.fromNotification(n, projectService, repositoryService, cache);
+            List<Object> data = (List) (getButtons ? settings.getButtons() : settings.getNotifications());
+            for (Object o : data) {
+                Struct s;
+                if (o instanceof PrnfbNotification) {
+                    s = Struct.fromNotification(o, projectService, repositoryService, cache);
+                } else {
+                    s = Struct.fromButton(o, projectService, repositoryService, cache);
+                }
+
                 if (!"".equals(grep)) {
                     if (!passesGrep(grep, s)) {
                         continue; // don't add this one, no filter match.
@@ -121,13 +130,25 @@ public class HttpUtil implements LifecycleAware {
                     structs.add(s);
                 }
             }
+            totalCount[0] = structs.size();
             Collections.sort(structs, BY_PROJ_REPO);
-            for (Struct s : structs) {
-                list.add(s.toStringList());
+            page--;
+            if (page * PAGE_SIZE >= structs.size()) {
+                page = (structs.size() + 1) / PAGE_SIZE;
+                page--;
+            }
+            page = Math.max(0, page);
+            for (int i = page * PAGE_SIZE; i < PAGE_SIZE + PAGE_SIZE * page; i++) {
+                if (i >= structs.size()) {
+                    break;
+                }
+                list.add(structs.get(i).toStringList());
             }
         }
         return list;
     }
+
+    public final static int PAGE_SIZE = 500;
 
     public static String insertHtmlForMatch(String raw, String needleLowerCase, String rawLowerCase) {
         raw = trimOrEmpty(raw);
@@ -165,19 +186,19 @@ public class HttpUtil implements LifecycleAware {
         return pass;
     }
 
-    public static List<List<String>> top99_Notifications() {
-        return top99_Dudes(NOTIFICATION_COUNT, false, false);
+    public static List<List<String>> top25_Notifications() {
+        return top25_Dudes(NOTIFICATION_COUNT, false, false);
     }
 
-    public static List<List<String>> top99_Injections() {
-        return top99_Dudes(INJECTION_COUNT, false, true);
+    public static List<List<String>> top25_Injections() {
+        return top25_Dudes(INJECTION_COUNT, false, true);
     }
 
-    public static List<List<String>> top99_Buttons() {
-        return top99_Dudes(BUTTON_CLICK_COUNT, true, false);
+    public static List<List<String>> top25_Buttons() {
+        return top25_Dudes(BUTTON_CLICK_COUNT, true, false);
     }
 
-    public static List<List<String>> top99_Dudes(Map<UUID, Integer> m, boolean isButton, boolean isInjection) {
+    public static List<List<String>> top25_Dudes(Map<UUID, Integer> m, boolean isButton, boolean isInjection) {
         PrnfbSettings settings = SettingsService.cachedSettings;
         List<Struct> structs = new ArrayList<>();
         for (Map.Entry<UUID, Integer> entry : m.entrySet()) {
@@ -192,7 +213,7 @@ public class HttpUtil implements LifecycleAware {
         List<List<String>> list = new ArrayList<>();
         for (Struct s : structs) {
             list.add(s.toStringList());
-            if (list.size() >= 99) {
+            if (list.size() >= 25) {
                 break;
             }
         }
@@ -272,7 +293,7 @@ public class HttpUtil implements LifecycleAware {
         }
 
         public void setIfBound(
-                ProjectService projectService, RepositoryService repositoryService, Map<String, Project> cache
+                ProjectService projectService, RepositoryService repositoryService, Map<String, Object> cache
         ) {
             if (isBound != null) {
                 return;
@@ -285,7 +306,7 @@ public class HttpUtil implements LifecycleAware {
             Project p = null;
             Repository r = null;
             if (hasProj) {
-                p = cache.get(pKey);
+                p = (Project) cache.get(pKey);
                 if (p == null) {
                     try {
                         p = projectService.getByKey(proj);
@@ -299,11 +320,16 @@ public class HttpUtil implements LifecycleAware {
                 }
                 if (p != null) {
                     if (hasRepo) {
-                        try {
-                            r = repositoryService.getBySlug(pKey, rKey);
-                        } catch (Exception e) {
-                            // swallow
-                            r = null;
+                        String repoCacheKey = pKey + "." + rKey;
+                        r = (Repository) cache.get(repoCacheKey);
+                        if (r == null) {
+                            try {
+                                r = repositoryService.getBySlug(pKey, rKey);
+                                cache.put(repoCacheKey, r);
+                            } catch (Exception e) {
+                                // swallow
+                                r = null;
+                            }
                         }
                     }
                 }
@@ -320,20 +346,54 @@ public class HttpUtil implements LifecycleAware {
             }
         }
 
-        public static Struct fromNotification(
-                PrnfbNotification n, ProjectService projectService, RepositoryService repositoryService,
-                Map<String, Project> cache
-        ) {
-            Struct s = new Struct();
-            UUID u = n.getUuid();
-            Integer count = 0;
+        private static int count(Map<UUID, Integer> m, UUID u) {
             if (u != null) {
-                count = NOTIFICATION_COUNT.get(u);
-                if (count == null) {
-                    count = 0;
+                Integer i = m.get(u);
+                if (i != null) {
+                    return i;
                 }
             }
-            s.count = count;
+            return 0;
+        }
+
+        public static Struct fromButton(
+                Object o, ProjectService projectService, RepositoryService repositoryService, Map<String, Object> cache
+        ) {
+            PrnfbButton b = (PrnfbButton) o;
+            Struct s = new Struct();
+            UUID u = b.getUuid();
+            s.count = count(BUTTON_CLICK_COUNT, u);
+            s.uuid = u != null ? u.toString() : "UUID=UNKNOWN";
+            s.proj = b.getProjectKey().orElse("");
+            s.repo = b.getRepositorySlug().orElse("");
+            s.name = b.getName();
+            s.url = htmlSafe(b.getRedirectUrl());
+            s.setIfBound(projectService, repositoryService, cache);
+
+            String suffix = "?myUuid=" + s.uuid;
+            suffix += "#pr_buttons";
+            String url = "admin";
+            boolean isBound = s.isBound != null && s.isBound;
+            if (isBound) {
+                if (!"".equals(s.proj)) {
+                    url += "/" + s.proj;
+                }
+                if (!"".equals(s.repo)) {
+                    url += "/" + s.repo;
+                }
+            }
+            url += suffix;
+            s.uuidHtml = "<a href='" + url + "'>" + s.uuid + "</a>";
+            return s;
+        }
+
+        public static Struct fromNotification(
+                Object o, ProjectService projectService, RepositoryService repositoryService, Map<String, Object> cache
+        ) {
+            PrnfbNotification n = (PrnfbNotification) o;
+            Struct s = new Struct();
+            UUID u = n.getUuid();
+            s.count = count(NOTIFICATION_COUNT, u);
             s.uuid = u != null ? u.toString() : "UUID=UNKNOWN";
             s.proj = n.getProjectKey().orElse("");
             s.repo = n.getRepositorySlug().orElse("");

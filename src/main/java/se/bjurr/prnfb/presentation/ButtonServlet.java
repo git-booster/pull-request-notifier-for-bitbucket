@@ -35,7 +35,6 @@ import javax.ws.rs.core.UriInfo;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -87,17 +86,51 @@ public class ButtonServlet {
         return status(OK).entity(createdDto).build();
     }
 
-    @DELETE
-    @Path("{uuid}")
-    @XsrfProtectionExcluded
-    @Produces(APPLICATION_JSON)
-    public Response delete(@PathParam("uuid") UUID prnfbButtonUuid) {
-        final PrnfbButton prnfbButton = settingsService.getButton(prnfbButtonUuid);
+    private Response delete(String prnfbButtonUuid) {
+        if (prnfbButtonUuid.startsWith("/")) {
+            prnfbButtonUuid = prnfbButtonUuid.substring(1);
+        }
+        if (prnfbButtonUuid.startsWith("settings/buttons/")) {
+            prnfbButtonUuid = prnfbButtonUuid.substring("settings/buttons/".length());
+        }
+        UUID u = Util.toUuid(prnfbButtonUuid);
+        if (u == null) {
+            return status(NOT_FOUND).build();
+        }
+        final PrnfbButton prnfbButton = settingsService.getButton(u);
         final USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
         if (!userCheckService.isAdminAllowed(prnfbButton, adminRestriction)) {
             return status(UNAUTHORIZED).build();
         }
-        settingsService.deleteButton(prnfbButtonUuid);
+        settingsService.deleteButton(prnfbButton.getUuid());
+        return status(OK).build();
+    }
+
+    @GET
+    @Path("/disable/{uuid}")
+    @XsrfProtectionExcluded
+    @Produces(APPLICATION_JSON)
+    public Response disable(@PathParam("uuid") UUID button) {
+        PrnfbButton prnfbButton = settingsService.getButton(button);
+        USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
+        if (!userCheckService.isAdminAllowed(prnfbButton, adminRestriction)) {
+            return status(UNAUTHORIZED).build();
+        }
+        settingsService.disableButton(prnfbButton.getUuid());
+        return status(OK).build();
+    }
+
+    @GET
+    @Path("/enable/{uuid}")
+    @XsrfProtectionExcluded
+    @Produces(APPLICATION_JSON)
+    public Response enable(@PathParam("uuid") UUID button) {
+        PrnfbButton prnfbButton = settingsService.getButton(button);
+        USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
+        if (!userCheckService.isAdminAllowed(prnfbButton, adminRestriction)) {
+            return status(UNAUTHORIZED).build();
+        }
+        settingsService.enableButton(prnfbButton.getUuid());
         return status(OK).build();
     }
 
@@ -151,6 +184,15 @@ public class ButtonServlet {
             prevString = s;
         }
         return new String[]{project, repo, last};
+    }
+
+
+    @DELETE
+    @Path("/{s:.*}")
+    @Produces(APPLICATION_JSON)
+    public Response deletePath(@Context UriInfo ui) {
+        final String path = ui.getPath();
+        return delete(path);
     }
 
     @GET
@@ -217,8 +259,7 @@ public class ButtonServlet {
     // @Path("{uuid}")
     public Response getUuidButtons(UUID uuid) {
         final PrnfbButton button = settingsService.getButton(uuid);
-        final USER_LEVEL adminRestriction =
-                settingsService.getPrnfbSettingsData().getAdminRestriction();
+        final USER_LEVEL adminRestriction = settingsService.getPrnfbSettingsData().getAdminRestriction();
         if (!userCheckService.isAdminAllowed(button, adminRestriction)) {
             return status(UNAUTHORIZED).build();
         }
@@ -244,10 +285,9 @@ public class ButtonServlet {
     public Response press(
             @Context HttpServletRequest request, @Context UriInfo ui, @FormParam("form") String form
     ) {
-
         final String path = ui.getPath();
         String[] parsed = parsePath(path, "pull-requests");
-        String project = parsed[0];
+        String proj = parsed[0];
         String repo = parsed[1];
         String pr = parsed[2];
 
@@ -255,22 +295,34 @@ public class ButtonServlet {
         String uuid = parsed2[2];
         final UUID u = Util.toUuid(uuid);
 
-        Repository r = userCheckService.getRepo(project, repo);
-        Integer rId = r != null ? r.getId() : null;
-        Long prId = parseLong(pr, -1L);
-        final List<PrnfbButton> buttons = buttonsService.getButtons(rId, prId);
-        final Optional<PrnfbButton> button = buttons.stream().filter(b -> b.getUuid().equals(u)).findAny();
-        if (!button.isPresent()) {
+        PrnfbButton button = settingsService.getButton(u);
+        if (!buttonMatches(button, proj, repo)) {
             return status(NOT_FOUND).build();
         }
+        Repository r = userCheckService.getRepo(proj, repo);
+        Integer rId = r != null ? r.getId() : null;
+        Long prId = parseLong(pr, -1L);
         final List<NotificationResponse> results = buttonsService.handlePressed(rId, prId, u, form);
-        final ButtonPressDTO dto = toTriggerResultDto(button.get(), results);
+        final ButtonPressDTO dto = toTriggerResultDto(button, results);
         return ok(dto, APPLICATION_JSON).build();
+    }
+
+    private static boolean buttonMatches(PrnfbButton button, String proj, String repo) {
+        String buttonProj = button.getProjectKey().orElse("");
+        String buttonRepo = button.getRepositorySlug().orElse("");
+        boolean buttonMatches = false;
+        if (buttonProj.isEmpty() && buttonRepo.isEmpty()) {
+            buttonMatches = true; // it's a global button - they match everything
+        } else if (buttonProj.equals(proj) && buttonRepo.isEmpty()) {
+            buttonMatches = true; // it's a project button, and we're on the right project
+        } else if (buttonProj.equals(proj) && buttonRepo.equals(repo)) {
+            buttonMatches = true; // it's a repo button
+        }
+        return buttonMatches;
     }
 
     private void renderButtonDtoList(Integer repositoryId, Long pullRequestId, ButtonDTO dto) {
         final PrnfbRendererWrapper renderer = buttonsService.getRenderer(repositoryId, pullRequestId, dto.getUuid());
-
         final List<ButtonFormElementDTO> buttonFormDtoList = dto.getButtonFormList();
         if (buttonFormDtoList != null) {
             for (final ButtonFormElementDTO buttonFormElementDto : buttonFormDtoList) {

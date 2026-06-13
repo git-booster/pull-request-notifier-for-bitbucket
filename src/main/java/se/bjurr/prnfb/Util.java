@@ -110,4 +110,34 @@ public class Util {
             }
         }
     }
+
+    public static Long toLong(String s, Long defaultValue) {
+        Long l = toLong(s);
+        return l != null ? l : defaultValue;
+    }
+
+    public static Long toLong(String s) {
+        s = s != null ? s.trim() : "";
+        if (!"".equals(s)) {
+            try {
+                return new Long(s);
+            } catch (NumberFormatException nfe) {
+                // ignore
+            }
+        }
+        return null;
+    }
+
+    public static Integer toInteger(String s) {
+        s = s != null ? s.trim() : "";
+        if (!"".equals(s)) {
+            try {
+                return new Integer(s);
+            } catch (NumberFormatException nfe) {
+                // ignore
+            }
+        }
+        return null;
+    }
+
 }

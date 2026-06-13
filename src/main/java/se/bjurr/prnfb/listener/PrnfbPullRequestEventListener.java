@@ -158,6 +158,8 @@ public class PrnfbPullRequestEventListener {
         return ifMerge == NOT_CONFLICTING && isConflicted || ifMerge == CONFLICTING && !isConflicted;
     }
 
+    static volatile int count = 0;
+
     public boolean isNotificationTriggeredByAction(
             final PrnfbNotification notification,
             final PrnfbPullRequestAction pullRequestAction,
@@ -199,35 +201,21 @@ public class PrnfbPullRequestEventListener {
                 return FALSE;
             }
         }
-
-        if (notification.getFilterRegexp().isPresent()
-                && notification.getFilterString().isPresent()
-                && !compile(notification.getFilterRegexp().get()).matcher(
-                renderer.render(
-                        notification.getFilterString().get(),
-                        ENCODE_FOR.NONE,
-                        clientKeyStore,
-                        shouldAcceptAnyCertificate
-                )
-        ).find()) {
-            return FALSE;
-        }
-
         if (doFullCheck) {
             if (notification.getFilterRegexp().isPresent()
                     && notification.getFilterString().isPresent()
-                    && !compile(notification.getFilterRegexp().get()).matcher(
-                    renderer.render(
-                            notification.getFilterString().get(),
-                            ENCODE_FOR.NONE,
-                            clientKeyStore,
-                            shouldAcceptAnyCertificate
-                    )
-            ).find()) {
+                    && !compile(notification.getFilterRegexp().get())
+                    .matcher(
+                            renderer.render(
+                                    notification.getFilterString().get(),
+                                    ENCODE_FOR.NONE,
+                                    clientKeyStore,
+                                    shouldAcceptAnyCertificate
+                            )
+                    ).find()) {
                 return FALSE;
             }
         }
-
         return TRUE;
     }
 

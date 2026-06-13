@@ -1,5 +1,6 @@
 package se.bjurr.prnfb.settings;
 
+import com.google.common.base.Objects;
 import se.bjurr.prnfb.Java2Json;
 import se.bjurr.prnfb.Util;
 import se.bjurr.prnfb.presentation.dto.ON_OR_OFF;
@@ -15,8 +16,9 @@ import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static se.bjurr.prnfb.Util.emptyToNull;
 import static se.bjurr.prnfb.Util.firstNotNull;
+import static se.bjurr.prnfb.http.HttpUtil.trimOrEmpty;
 
-public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._2JS {
+public class PrnfbButton implements HasUuid, Restricted, Comparable<PrnfbButton>, Java2Json._2JS {
 
     private ON_OR_OFF confirmation;
     private String name;
@@ -97,6 +99,22 @@ public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._
         this.confirmationText = emptyToNull(confirmationText);
         this.redirectUrl = emptyToNull(redirectUrl);
         this.buttonFormElementList = firstNotNull(buttonFormElementList, new ArrayList<>());
+    }
+
+    public boolean disable() {
+        if (projectKey != null && !projectKey.startsWith(".disabled.")) {
+            this.projectKey = ".disabled." + this.projectKey;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean enable() {
+        if (projectKey != null && projectKey.startsWith(".disabled.")) {
+            this.projectKey = this.projectKey.substring(".disabled.".length());
+            return true;
+        }
+        return false;
     }
 
     public String getConfirmationText() {
@@ -210,52 +228,54 @@ public class PrnfbButton implements HasUuid, Restricted, Comparable, Java2Json._
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result =
-                prime * result + (buttonFormElementList == null ? 0 : buttonFormElementList.hashCode());
-        result = prime * result + (confirmation == null ? 0 : confirmation.hashCode());
-        result = prime * result + (confirmationText == null ? 0 : confirmationText.hashCode());
-        result = prime * result + (name == null ? 0 : name.hashCode());
-        result = prime * result + (projectKey == null ? 0 : projectKey.hashCode());
-        result = prime * result + (repositorySlug == null ? 0 : repositorySlug.hashCode());
-        result = prime * result + (userLevel == null ? 0 : userLevel.hashCode());
-        result = prime * result + (uuid == null ? 0 : uuid.hashCode());
-        result = prime * result + (redirectUrl == null ? 0 : redirectUrl.hashCode());
-        return result;
+        return uuid != null ? uuid.hashCode() : Objects.hashCode(repositorySlug, projectKey, name, redirectUrl);
     }
 
     @Override
     public String toString() {
-        return "PrnfbButton [confirmation="
-                + confirmation
-                + ", name="
-                + name
-                + ", projectKey="
-                + projectKey
-                + ", repositorySlug="
-                + repositorySlug
-                + ", buttonFormElementList="
-                + buttonFormElementList
-                + ", userLevel="
-                + userLevel
-                + ", uuid="
-                + uuid
-                + ", confirmationText="
-                + confirmationText
-                + ", redirectUrl="
-                + redirectUrl
-                + "]";
+        return "PR-Button " + uuid + " " + projectKey + " " + repositorySlug + " " + name;
     }
 
-    @Override
-    public int compareTo(Object o) {
-        String s1 = toString();
-        String s2 = ((PrnfbButton) o).toString();
-        int c = s1.compareToIgnoreCase(s2);
+    public int compareTo(PrnfbButton other) {
+        if (this == other) {
+            return 0;
+        } else if (other == null) {
+            return -1;
+        }
+        String p1 = trimOrEmpty(projectKey);
+        String p2 = trimOrEmpty(other.projectKey);
+        int c = p1.compareToIgnoreCase(p2);
         if (c == 0) {
-            c = s1.compareTo(s2);
+            String r1 = trimOrEmpty(repositorySlug);
+            String r2 = trimOrEmpty(other.repositorySlug);
+            c = r1.compareToIgnoreCase(r2);
+            if (c == 0) {
+                String n1 = trimOrEmpty(name);
+                String n2 = trimOrEmpty(other.name);
+                c = n1.compareToIgnoreCase(n2);
+                if (c == 0) {
+                    c = n1.compareTo(n2);
+                    if (c == 0) {
+                        String u1 = trimOrEmpty(redirectUrl);
+                        String u2 = trimOrEmpty(other.redirectUrl);
+                        c = u1.compareToIgnoreCase(u2);
+                        if (c == 0) {
+                            c = u1.compareTo(u2);
+                            if (c == 0 && uuid != other.uuid) {
+                                if (uuid != null && other.uuid != null) {
+                                    c = uuid.toString().compareToIgnoreCase(other.uuid.toString());
+                                } else if (uuid != null) {
+                                    c = 1;
+                                } else {
+                                    c = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         return c;
     }
+
 }

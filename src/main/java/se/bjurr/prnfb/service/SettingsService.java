@@ -1,6 +1,7 @@
 package se.bjurr.prnfb.service;
 
 import com.atlassian.bitbucket.project.Project;
+import com.atlassian.bitbucket.pull.PullRequest;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.user.SecurityService;
 import com.atlassian.bitbucket.util.Operation;
@@ -27,7 +28,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.atlassian.bitbucket.permission.Permission.ADMIN;
-import static se.bjurr.prnfb.Util.findUuidMatch;
 import static se.bjurr.prnfb.Util.newListWithoutUuid;
 import static se.bjurr.prnfb.settings.PrnfbNotificationBuilder.prnfbNotificationBuilder;
 import static se.bjurr.prnfb.settings.PrnfbSettings.UNCHANGED;
@@ -99,6 +99,42 @@ public class SettingsService {
         );
     }
 
+    public void disableButton(UUID uuid) {
+        inSynchronizedTransaction(
+                new TransactionCallback<Void>() {
+                    @Override
+                    public Void doInTransaction() {
+                        doDisableButton(uuid);
+                        return null;
+                    }
+                }
+        );
+    }
+
+    public void enableButton(UUID uuid) {
+        inSynchronizedTransaction(
+                new TransactionCallback<Void>() {
+                    @Override
+                    public Void doInTransaction() {
+                        doEnableButton(uuid);
+                        return null;
+                    }
+                }
+        );
+    }
+
+    public void deleteNotification(UUID uuid) {
+        inSynchronizedTransaction(
+                new TransactionCallback<Void>() {
+                    @Override
+                    public Void doInTransaction() {
+                        doDeleteNotification(uuid);
+                        return null;
+                    }
+                }
+        );
+    }
+
     public void disableNotification(UUID uuid) {
         inSynchronizedTransaction(
                 new TransactionCallback<Void>() {
@@ -123,24 +159,14 @@ public class SettingsService {
         );
     }
 
-    public void deleteNotification(UUID uuid) {
-        inSynchronizedTransaction(
-                new TransactionCallback<Void>() {
-                    @Override
-                    public Void doInTransaction() {
-                        doDeleteNotification(uuid);
-                        return null;
-                    }
-                }
-        );
-    }
-
     public Optional<PrnfbButton> findButton(UUID uuid) {
-        return findUuidMatch(getPrnfbSettings().getButtons(), uuid);
+        PrnfbButton b = getPrnfbSettings().getButtonByUUID(uuid);
+        return Optional.ofNullable(b);
     }
 
     public Optional<PrnfbNotification> findNotification(UUID notificationUuid) {
-        return findUuidMatch(getPrnfbSettings().getNotifications(), notificationUuid);
+        PrnfbNotification n = getPrnfbSettings().getNotificationByUUID(notificationUuid);
+        return Optional.ofNullable(n);
     }
 
     public PrnfbButton getButton(UUID buttionUuid) {
@@ -154,6 +180,17 @@ public class SettingsService {
 
     public List<PrnfbButton> getButtons() {
         return getPrnfbSettings().getButtons();
+    }
+
+    public List<PrnfbButton> getButtons(PullRequest pr) {
+        PrnfbSettings settings = getPrnfbSettings();
+        Repository r = pr.getToRef().getRepository();
+        Project p = r.getProject();
+        ArrayList<PrnfbButton> list = new ArrayList<>();
+        list.addAll(settings.getButtonsGlobal());
+        list.addAll(settings.getButtonsByProj(p.getKey(), false));
+        list.addAll(settings.getButtonsByRepo(p.getKey(), r.getSlug()));
+        return list;
     }
 
     public List<PrnfbButton> getButtons(Project p) {
@@ -190,6 +227,18 @@ public class SettingsService {
 
     public List<PrnfbNotification> getNotifications() {
         return getPrnfbSettings().getNotifications();
+    }
+
+    public List<PrnfbNotification> getNotifications(PullRequest pr) {
+        PrnfbSettings settings = getPrnfbSettings();
+        Repository r = pr.getToRef().getRepository();
+        Project p = r.getProject();
+        ArrayList<PrnfbNotification> list = new ArrayList<>();
+        list.addAll(settings.getNotificationsGlobal());
+        list.addAll(settings.getNotificationsByProj(p.getKey(), false));
+        list.addAll(settings.getNotificationsByRepo(p.getKey(), r.getSlug()));
+        return list;
+
     }
 
     public List<PrnfbNotification> getNotifications(String projectKey) {
@@ -283,6 +332,22 @@ public class SettingsService {
             return oldValue.orElse(null);
         }
         return newValue.orElse(null);
+    }
+
+    private void doDisableButton(UUID uuid) {
+        final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
+        PrnfbButton b = originalSettings.getButtonByUUID(uuid);
+        if (b.disable()) {
+            doSetPrnfbSettings(originalSettings);
+        }
+    }
+
+    private void doEnableButton(UUID uuid) {
+        final PrnfbSettings originalSettings = doGetPrnfbSettings(true);
+        PrnfbButton b = originalSettings.getButtonByUUID(uuid);
+        if (b.enable()) {
+            doSetPrnfbSettings(originalSettings);
+        }
     }
 
     private void doDeleteButton(UUID uuid) {

@@ -16,6 +16,8 @@
         #prNotifierConfigReport i.y { font-style: normal; color: darkgreen; }
         #prNotifierConfigReport i.n { font-style: normal; font-weight: bold; color: darkred; }
         #prNotifierConfigReport b { font-style: normal; font-weight: bold; color: red; }
+        .prn_buttons #prn_a_buttons { color: black; background-color: yellow; text-decoration: underline; }
+        .prn_notifications #prn_a_notifications { color: black; background-color: yellow; text-decoration: underline; }
     </style>
     <script>
 
@@ -25,18 +27,33 @@
 <body>
 
 <h1>PR-Notifier - Configuration Review</h1>
-<br/>&nbsp;
+<hr/>
+<p class='prn_$type'>
+    <b>Showing: &nbsp; <a id='prn_a_buttons' href='?report=y&type=buttons'>Buttons</a> | <a id='prn_a_notifications' href='?report=y'>Notifications</a></b>
+    &nbsp; <br/> &nbsp;
+</p>
+
 <form action="admin" method="GET">
     <input type="hidden" name="report" value="y"/>
+    <input type="hidden" name="type" id="prnfb_report_type" value="$type"/>
     Search/filter: &nbsp; <input type="text" id="grep" name="grep" value="$grep" tabindex="5" /> &nbsp;
     <script>var myGrep = document.getElementById("grep"); myGrep.focus(); myGrep.select();</script>
-    <input type="reset" value="Clear" onClick="window.location='admin?report=y'; return false;" tabindex="5" /> &nbsp;
+    <input type="reset" value="Clear" onClick="window.location='admin?report=y&type=$type'; return false;" tabindex="5" /> &nbsp;
     <input type="submit" value="Apply Filter" tabindex="5" />
     &nbsp; (minimum 3 characters required to filter)
 </form>
+<br/>
+<b>Invocations started at: </b> $since ($sinceDuration seconds ago)
+
 <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 1em;" id="prNotifierConfigReport">
     <tbody>
-    <tr><th colspan="9"><h2>$data.size() Notifications #if($grep.length() > 0) contain "$grep" #end</h2></th></tr>
+    <tr><th colspan="9"><h2>$title</h2>
+        &nbsp; <br/>
+        <a href='admin?report=y&type=$type&page=1&grep=$grep'>First</a> &nbsp; | &nbsp;
+        <a href='admin?report=y&type=$type&page=$prev&grep=$grep'>Prev</a> &nbsp; | &nbsp;
+        <a href='admin?report=y&type=$type&page=$next&grep=$grep'>Next</a> &nbsp; | &nbsp;
+        <a href='admin?report=y&type=$type&page=$last&grep=$grep'>Last</a>
+    </th></tr>
     <tr><th> </th><th> </th><th> </th><th>Invocations</th><th>UUID</th><th>Project</th><th>Repository</th><th>Active</th><th>Name</th><th>URL</th></tr>
 
         #foreach( $row in $data )

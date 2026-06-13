@@ -51,19 +51,18 @@ public class ButtonsService {
         String projectKey = pr.getToRef().getRepository().getProject().getKey();
         String repositoryKey = pr.getToRef().getRepository().getSlug();
         List<PrnfbButton> allFoundButtons = new ArrayList<>();
-        for (PrnfbButton candidate : settingsService.getButtons()) {
-            PrnfbButton button = settingsService.getButton(candidate.getUuid());
+        for (PrnfbButton button : settingsService.getButtons(pr)) {
             VariablesContext variables = new VariablesContextBuilder().setButton(button).build();
             PrnfbPullRequestAction pullRequestAction = BUTTON_TRIGGER;
-            if (userCheckService.isAllowed(candidate.getUserLevel(), projectKey, repositoryKey)
+            if (userCheckService.isAllowed(button.getUserLevel(), projectKey, repositoryKey)
+                    &&
+                    isVisibleOnPullRequest(button, pr)
                     &&
                     isTriggeredByAction(
                             clientKeyStore, notifications, shouldAcceptAnyCertificate, pullRequestAction, pr, variables
                     )
-                    &&
-                    isVisibleOnPullRequest(candidate, pr)
             ) {
-                allFoundButtons.add(candidate);
+                allFoundButtons.add(button);
             }
         }
 
@@ -87,7 +86,7 @@ public class ButtonsService {
         VariablesContext vars = new VariablesContextBuilder().setButton(button).setFormData(formData).build();
 
         List<NotificationResponse> successes = new ArrayList<>();
-        for (PrnfbNotification prnfbNotification : settingsService.getNotifications()) {
+        for (PrnfbNotification prnfbNotification : settingsService.getNotifications(pr)) {
             PrnfbPullRequestAction pullRequestAction = BUTTON_TRIGGER;
             PrnfbRenderer renderer = prnfbRendererFactory.create(pr, pullRequestAction, prnfbNotification, vars);
             if (prnfbPullRequestEventListener.isNotificationTriggeredByAction(
@@ -111,12 +110,16 @@ public class ButtonsService {
     }
 
     public List<PrnfbButton> getButtons(Integer repositoryId, Long pullRequestId) {
-        final PrnfbSettingsData settings = settingsService.getPrnfbSettingsData();
-        List<PrnfbNotification> notifications = settingsService.getNotifications();
-        ClientKeyStore clientKeyStore = new ClientKeyStore(settings);
-        final PullRequest pullRequest = pullRequestService.getById(repositoryId, pullRequestId);
-        boolean shouldAcceptAnyCertificate = settings.isShouldAcceptAnyCertificate();
-        return doGetButtons(notifications, clientKeyStore, pullRequest, shouldAcceptAnyCertificate);
+        final PullRequest pr = pullRequestService.getById(repositoryId, pullRequestId);
+        if (pr != null) {
+            final PrnfbSettingsData settings = settingsService.getPrnfbSettingsData();
+            List<PrnfbNotification> notifications = settingsService.getNotifications(pr);
+            ClientKeyStore clientKeyStore = new ClientKeyStore(settings);
+            boolean shouldAcceptAnyCertificate = settings.isShouldAcceptAnyCertificate();
+            return doGetButtons(notifications, clientKeyStore, pr, shouldAcceptAnyCertificate);
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     public PrnfbRendererWrapper getRenderer(
@@ -126,12 +129,9 @@ public class ButtonsService {
         ClientKeyStore clientKeyStore = new ClientKeyStore(settings);
         final PullRequest pullRequest = pullRequestService.getById(repositoryId, pullRequestId);
         boolean shouldAcceptAnyCertificate = settings.isShouldAcceptAnyCertificate();
-
         PrnfbButton button = settingsService.getButton(buttonUuid);
         VariablesContext variables = new VariablesContextBuilder().setButton(button).build();
-
         PrnfbPullRequestAction pullRequestAction = BUTTON_TRIGGER;
-
         PrnfbRendererWrapper renderer = prnfbRendererFactory.create(
                 pullRequest, pullRequestAction, variables, clientKeyStore, shouldAcceptAnyCertificate
         );
@@ -156,7 +156,8 @@ public class ButtonsService {
             boolean shouldAcceptAnyCertificate,
             PrnfbPullRequestAction pullRequestAction,
             PullRequest pr,
-            VariablesContext variables) {
+            VariablesContext variables
+    ) {
         for (PrnfbNotification prnfbNotification : notifications) {
             PrnfbRenderer renderer = prnfbRendererFactory.create(pr, pullRequestAction, prnfbNotification, variables);
             if (prnfbPullRequestEventListener.isNotificationTriggeredByAction(
@@ -187,22 +188,16 @@ public class ButtonsService {
      * @return True if the button is either globally visible or matches with the given repository
      */
     public boolean isVisibleOnRepository(PrnfbButton button, Repository repository) {
-        boolean projectOk = false;
-        boolean repoOk = false;
-
-        do {
-            if (button.getProjectKey().isPresent()) {
-                projectOk |= button.getProjectKey().get().equals(repository.getProject().getKey());
-            } else {
-                projectOk = true;
-            }
-            if (button.getRepositorySlug().isPresent()) {
-                repoOk |= button.getRepositorySlug().get().equals(repository.getSlug());
-            } else {
-                repoOk = true;
-            }
-        } while (!(projectOk && repoOk) && (repository = repository.getOrigin()) != null);
-
-        return projectOk && repoOk;
+        String p = repository.getProject().getKey();
+        String r = repository.getSlug();
+        String pKey = button.getProjectKey().orElse(null);
+        String rKey = button.getRepositorySlug().orElse(null);
+        if (pKey == null && rKey == null) {
+            return true; // always show this button everywhere!
+        } else if (pKey != null && rKey == null) {
+            return p.equals(pKey); // always show this button if proj matches!
+        } else {
+            return p.equals(pKey) && r.equals(rKey);
+        }
     }
 }

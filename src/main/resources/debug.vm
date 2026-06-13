@@ -94,7 +94,7 @@ very few entries for the "in-flight" group.
 <hr/>
 &nbsp;
 <br/>
-
+<b>Measurements Started:</b> $since ($sinceDuration seconds ago)
 <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 3em;">
     <tbody>
     <tr><th colspan="9"><h2>Most Active Notifications</h2></th></tr>
@@ -150,7 +150,7 @@ very few entries for the "in-flight" group.
 
 <p>
     <b>plugin_setting: "se.bjurr.prnfb.pull-request-notifier-for-bitbucket-3" - JSON dump:</b>
-    <br/><a href="./admin/dump.json?trace=y&amp;dumpJson=y">dump.json</a>
+    <br/><a href="./admin/dump.json?trace=y&amp;dumpJson=y">dump.json</a> ($dumpSize KB)
 </p>
 
 
