@@ -38,6 +38,7 @@ import se.bjurr.prnfb.service.SettingsService;
 import se.bjurr.prnfb.settings.PrnfbButton;
 import se.bjurr.prnfb.settings.PrnfbNotification;
 import se.bjurr.prnfb.settings.PrnfbSettings;
+import se.bjurr.prnfb.settings.Restricted;
 
 import javax.inject.Named;
 import javax.net.ssl.SSLContext;
@@ -254,14 +255,27 @@ public class HttpUtil implements LifecycleAware {
     };
 
     private static class Struct implements Comparable<Struct> {
-        private int count;
-        private String uuidHtml;
-        private String uuid;
+        private final boolean isButton;
+        private final String uuid;
         private String proj;
         private String repo;
         private String name;
         private String url;
+
+        private int count;
+        private String uuidHtml;
         private Boolean isBound;
+
+        public Struct(
+                boolean isButton, String uuid, String proj, String repo, String name, String url
+        ) {
+            this.isButton = isButton;
+            this.uuid = uuid;
+            this.proj = proj;
+            this.repo = repo;
+            this.name = name;
+            this.url = url;
+        }
 
         public List<String> toStringList() {
             String[] s = new String[8];
@@ -344,6 +358,19 @@ public class HttpUtil implements LifecycleAware {
             } else {
                 isBound = false; // This one lost its binding (probably from a renaming)
             }
+            String suffix = "?myUuid=" + uuid;
+            suffix += isButton ? "#pr_buttons" : "pr_notifications";
+            String url = "admin";
+            if (isBound) {
+                if (!"".equals(proj)) {
+                    url += "/" + proj;
+                }
+                if (!"".equals(repo)) {
+                    url += "/" + repo;
+                }
+            }
+            url += suffix;
+            this.uuidHtml = "<a href='" + url + "'>" + uuid + "</a>";
         }
 
         private static int count(Map<UUID, Integer> m, UUID u) {
@@ -360,30 +387,13 @@ public class HttpUtil implements LifecycleAware {
                 Object o, ProjectService projectService, RepositoryService repositoryService, Map<String, Object> cache
         ) {
             PrnfbButton b = (PrnfbButton) o;
-            Struct s = new Struct();
             UUID u = b.getUuid();
+            String uuid = u != null ? u.toString() : "UUID=UNKNOWN";
+            Struct s = new Struct(
+                    true, uuid, b.getProjectKey().orElse(""), b.getRepositorySlug().orElse(""),
+                    b.getName(), htmlSafe(b.getRedirectUrl())
+            );
             s.count = count(BUTTON_CLICK_COUNT, u);
-            s.uuid = u != null ? u.toString() : "UUID=UNKNOWN";
-            s.proj = b.getProjectKey().orElse("");
-            s.repo = b.getRepositorySlug().orElse("");
-            s.name = b.getName();
-            s.url = htmlSafe(b.getRedirectUrl());
-            s.setIfBound(projectService, repositoryService, cache);
-
-            String suffix = "?myUuid=" + s.uuid;
-            suffix += "#pr_buttons";
-            String url = "admin";
-            boolean isBound = s.isBound != null && s.isBound;
-            if (isBound) {
-                if (!"".equals(s.proj)) {
-                    url += "/" + s.proj;
-                }
-                if (!"".equals(s.repo)) {
-                    url += "/" + s.repo;
-                }
-            }
-            url += suffix;
-            s.uuidHtml = "<a href='" + url + "'>" + s.uuid + "</a>";
             return s;
         }
 
@@ -391,83 +401,51 @@ public class HttpUtil implements LifecycleAware {
                 Object o, ProjectService projectService, RepositoryService repositoryService, Map<String, Object> cache
         ) {
             PrnfbNotification n = (PrnfbNotification) o;
-            Struct s = new Struct();
             UUID u = n.getUuid();
+            String uuid = u != null ? u.toString() : "UUID=UNKNOWN";
+            Struct s = new Struct(
+                    false, uuid, n.getProjectKey().orElse(""), n.getRepositorySlug().orElse(""),
+                    n.getName(), htmlSafe(n.getUrl())
+            );
             s.count = count(NOTIFICATION_COUNT, u);
-            s.uuid = u != null ? u.toString() : "UUID=UNKNOWN";
-            s.proj = n.getProjectKey().orElse("");
-            s.repo = n.getRepositorySlug().orElse("");
-            s.name = n.getName();
-            s.url = htmlSafe(n.getUrl());
-            s.setIfBound(projectService, repositoryService, cache);
-
-            String suffix = "?myUuid=" + s.uuid;
-            suffix += "#pr_notifications";
-            String url = "admin";
-            boolean isBound = s.isBound != null && s.isBound;
-            if (isBound) {
-                if (!"".equals(s.proj)) {
-                    url += "/" + s.proj;
-                }
-                if (!"".equals(s.repo)) {
-                    url += "/" + s.repo;
-                }
-            }
-            url += suffix;
-            s.uuidHtml = "<a href='" + url + "'>" + s.uuid + "</a>";
             return s;
         }
 
         public static Struct fromUuid(
-                PrnfbSettings settings, UUID uuid, Integer count, boolean isButton, boolean isInjection
+                PrnfbSettings settings, UUID u, Integer count, boolean isButton, boolean isInjection
         ) {
-            Struct s = new Struct();
-            s.uuid = uuid.toString();
-            s.count = count;
-            String suffix = "?myUuid=" + uuid;
-
-            boolean foundUuid = false;
+            String uuid = u != null ? u.toString() : "UUID=UNKNOWN";
+            Struct s = null;
             if (isButton) {
-                suffix += "#pr_buttons";
-                for (PrnfbButton b : settings.getButtons()) {
-                    if (uuid.equals(b.getUuid())) {
-                        foundUuid = true;
-                        s.proj = b.getProjectKey().orElse("");
-                        s.repo = b.getRepositorySlug().orElse("");
-                        s.name = b.getName();
-                        s.url = b.getRedirectUrl();
-                        break;
-                    }
+                PrnfbButton b = settings.getButtonByUUID(u);
+                if (b != null) {
+                    s = new Struct(isButton, uuid, pKey(b), rSlug(b), b.getName(), htmlSafe(b.getRedirectUrl()));
                 }
             } else {
-                suffix += "#pr_notifications";
-                for (PrnfbNotification n : settings.getNotifications()) {
-                    if (uuid.equals(n.getUuid())) {
-                        foundUuid = true;
-                        s.proj = n.getProjectKey().orElse("");
-                        s.repo = n.getRepositorySlug().orElse("");
-                        s.name = n.getName();
-                        s.url = isInjection ? n.getInjectionUrl().orElse("") : n.getUrl();
-                        break;
+                PrnfbNotification n = settings.getNotificationByUUID(u);
+                if (n != null) {
+                    String url = n.getUrl();
+                    if (isInjection) {
+                        url = n.getInjectionUrl().orElse("");
                     }
+                    s = new Struct(isButton, uuid, pKey(n), rSlug(n), n.getName(), htmlSafe(url));
                 }
             }
-            if (foundUuid) {
-                String url = "admin";
-                if (!"".equals(s.proj)) {
-                    url += "/" + s.proj;
-                }
-                if (!"".equals(s.repo)) {
-                    url += "/" + s.repo;
-                }
-                url += suffix;
-                s.uuidHtml = "<a href='" + url + "'>" + uuid + "</a>";
-            } else {
-                s.name = "ERROR: COULD NOT FIND UUID";
+            if (s == null) {
+                String name = "ERROR: COULD NOT FIND UUID";
+                s = new Struct(false, uuid, "", "", name, "");
             }
-            s.url = htmlSafe(s.url);
+            s.count = count;
             return s;
         }
+    }
+
+    private static String pKey(Restricted r) {
+        return r != null ? r.getProjectKey().orElse("") : "";
+    }
+
+    private static String rSlug(Restricted r) {
+        return r != null ? r.getRepositorySlug().orElse("") : "";
     }
 
     public static String trimOrEmpty(String s) {
